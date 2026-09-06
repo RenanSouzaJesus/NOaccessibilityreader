@@ -7,6 +7,8 @@ import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.WindowManager;
@@ -20,10 +22,19 @@ import java.util.Set;
 
 public class ScreenAccessibilityService extends AccessibilityService {
 
+    private static final long HIDE_DELAY_MS = 1600L;
+
     private long lastRead = 0L;
     private WindowManager windowManager;
     private TextView overlayView;
     private boolean overlayAttached;
+    private String overlayPackage = "";
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final Runnable delayedHide = () -> {
+        hideOverlay();
+        overlayPackage = "";
+    };
 
     @Override
     protected void onServiceConnected() {
@@ -40,17 +51,26 @@ public class ScreenAccessibilityService extends AccessibilityService {
 
         // Nunca deixa a tela do próprio NO substituir a última corrida analisada.
         if (getPackageName().equals(currentPackage)) {
+            cancelPendingHide();
             hideOverlay();
+            overlayPackage = "";
+            return;
+        }
+
+        // Eventos rápidos da barra de status não devem derrubar o HUD de uma corrida válida.
+        if ("com.android.systemui".equals(currentPackage)) {
             return;
         }
 
         long now = SystemClock.elapsedRealtime();
-        if (now - lastRead < 300) return;
+        if (now - lastRead < 250) return;
         lastRead = now;
 
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root == null) {
-            hideOverlay();
+            if (overlayAttached && !currentPackage.equals(overlayPackage)) {
+                scheduleHide();
+            }
             return;
         }
 
@@ -68,16 +88,57 @@ public class ScreenAccessibilityService extends AccessibilityService {
         String content = out.toString();
         RideOfferParser.RideOffer offer = RideOfferParser.parse(content);
 
-        // Só salva como corrida quando o parser encontra os campos mínimos.
-        // Isso impede launcher, tela de recentes e menus do sistema de apagar a última oferta válida.
         if (offer == null) {
-            hideOverlay();
             saveDebugCapture(currentPackage, content);
+
+            // Alguns eventos de acessibilidade trazem só parte da árvore da tela.
+            // Se ainda houver sinais claros de que estamos na mesma oferta,
+            // preserva o HUD em vez de fazê-lo piscar/desaparecer.
+            if (overlayAttached
+                    && currentPackage.equals(overlayPackage)
+                    && looksLikeRideOffer(content)) {
+                cancelPendingHide();
+                return;
+            }
+
+            // Se realmente saiu da tela da oferta, remove com um pequeno debounce
+            // para não reagir a eventos transitórios do Android.
+            if (overlayAttached) {
+                scheduleHide();
+            }
             return;
         }
 
+        cancelPendingHide();
+        overlayPackage = currentPackage;
         saveOffer(currentPackage, content, offer);
         showOverlay(offer);
+    }
+
+    private boolean looksLikeRideOffer(String content) {
+        if (content == null || content.isEmpty()) return false;
+
+        String lower = content.toLowerCase(Locale.ROOT);
+        boolean hasPrice = lower.contains("r$");
+        boolean hasDistance = lower.contains(" km") || lower.contains("quilômetro") || lower.contains("quilometro");
+        boolean hasRideMarker = lower.contains("uber")
+                || lower.contains("99pop")
+                || lower.contains("99 pop")
+                || lower.contains("passageiro")
+                || lower.contains("viagem")
+                || lower.contains("aceitar corrida")
+                || lower.contains("aceitar");
+
+        return (hasPrice && hasRideMarker) || (hasPrice && hasDistance) || (hasDistance && hasRideMarker);
+    }
+
+    private void scheduleHide() {
+        mainHandler.removeCallbacks(delayedHide);
+        mainHandler.postDelayed(delayedHide, HIDE_DELAY_MS);
+    }
+
+    private void cancelPendingHide() {
+        mainHandler.removeCallbacks(delayedHide);
     }
 
     private void saveOffer(String pkg, String content, RideOfferParser.RideOffer offer) {
@@ -197,11 +258,13 @@ public class ScreenAccessibilityService extends AccessibilityService {
 
     @Override
     public void onInterrupt() {
+        cancelPendingHide();
         hideOverlay();
     }
 
     @Override
     public void onDestroy() {
+        cancelPendingHide();
         hideOverlay();
         super.onDestroy();
     }

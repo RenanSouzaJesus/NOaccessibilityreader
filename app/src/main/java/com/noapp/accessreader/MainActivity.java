@@ -38,7 +38,9 @@ public class MainActivity extends Activity {
     private LinearLayout bestCard;
     private TextView bestPlatformText;
     private TextView bestPriceText;
-    private TextView bestMetricsText;
+    private TextView bestDistanceText;
+    private TextView bestPerKmText;
+    private TextView bestPerHourText;
     private TextView bestReasonText;
     private TextView emptyInboxText;
     private LinearLayout opportunitiesContainer;
@@ -65,7 +67,9 @@ public class MainActivity extends Activity {
         bestCard = findViewById(R.id.bestCard);
         bestPlatformText = findViewById(R.id.bestPlatformText);
         bestPriceText = findViewById(R.id.bestPriceText);
-        bestMetricsText = findViewById(R.id.bestMetricsText);
+        bestDistanceText = findViewById(R.id.bestDistanceText);
+        bestPerKmText = findViewById(R.id.bestPerKmText);
+        bestPerHourText = findViewById(R.id.bestPerHourText);
         bestReasonText = findViewById(R.id.bestReasonText);
         emptyInboxText = findViewById(R.id.emptyInboxText);
         opportunitiesContainer = findViewById(R.id.opportunitiesContainer);
@@ -102,7 +106,6 @@ public class MainActivity extends Activity {
                     : "Mostrar diagnóstico técnico");
         });
 
-        setTabTextSize();
         refreshData();
     }
 
@@ -185,21 +188,15 @@ public class MainActivity extends Activity {
         bestCard.setVisibility(View.VISIBLE);
         bestPlatformText.setText(best.platform + " • " + best.category);
         bestPriceText.setText(money(best.price));
-
-        String metrics = String.format(ptBr,
-                "%.1f km • R$ %.2f/km",
-                best.totalKm,
-                best.grossPerKm);
-        if (best.grossPerHour > 0) {
-            metrics += String.format(ptBr, " • R$ %.2f/h", best.grossPerHour);
-        } else {
-            metrics += " • tempo não informado";
-        }
-        bestMetricsText.setText(metrics);
+        bestDistanceText.setText(String.format(ptBr, "%.1f km", best.totalKm));
+        bestPerKmText.setText(String.format(ptBr, "R$ %.2f", best.grossPerKm));
+        bestPerHourText.setText(best.grossPerHour > 0
+                ? String.format(ptBr, "R$ %.0f", best.grossPerHour)
+                : "—");
 
         String reason = ranking.reason;
         if (ranking.second != null && ranking.advantagePct > 0.1) {
-            reason += String.format(ptBr, " Vantagem estimada de %.1f%% sobre a próxima comparável.",
+            reason += String.format(ptBr, " • %.1f%% de vantagem na comparação atual.",
                     ranking.advantagePct);
         }
         bestReasonText.setText(reason);
@@ -235,7 +232,7 @@ public class MainActivity extends Activity {
         card.setPadding(dp(14), dp(13), dp(14), dp(13));
         card.setBackground(roundRect(
                 getColor(R.color.no_card),
-                dp(16),
+                dp(18),
                 isBest ? getColor(R.color.no_cyan) : getColor(R.color.no_border),
                 isBest ? dp(2) : dp(1)
         ));
@@ -249,7 +246,7 @@ public class MainActivity extends Activity {
         top.setGravity(Gravity.CENTER_VERTICAL);
         card.addView(top);
 
-        TextView brand = text(item.platform, 12, brandTextColor(item.platform), true);
+        TextView brand = text(item.platform, 11, brandTextColor(item.platform), true);
         brand.setPadding(dp(9), dp(5), dp(9), dp(5));
         brand.setBackground(roundRect(
                 brandColor(item.platform),
@@ -263,57 +260,115 @@ public class MainActivity extends Activity {
         top.addView(category);
         top.addView(new Space(this), new LinearLayout.LayoutParams(0, dp(1), 1f));
 
-        if (isBest) {
-            TextView best = text("MELHOR", 9, getColor(R.color.no_cyan_soft), true);
-            best.setPadding(dp(7), dp(4), dp(7), dp(4));
-            best.setBackgroundResource(R.drawable.bg_no_badge_high);
-            top.addView(best);
-        }
+        TextView typeBadge = text(typeLabel(item.type), 9,
+                getColor(R.color.no_text_secondary), true);
+        typeBadge.setLetterSpacing(0.06f);
+        typeBadge.setPadding(dp(8), dp(4), dp(8), dp(4));
+        typeBadge.setBackground(roundRect(
+                getColor(R.color.no_metric),
+                dp(999),
+                getColor(R.color.no_border),
+                dp(1)
+        ));
+        top.addView(typeBadge);
 
         LinearLayout valueRow = new LinearLayout(this);
         valueRow.setOrientation(LinearLayout.HORIZONTAL);
-        valueRow.setGravity(Gravity.BOTTOM);
+        valueRow.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout.LayoutParams valueRowLp = new LinearLayout.LayoutParams(-1, -2);
-        valueRowLp.setMargins(0, dp(9), 0, 0);
+        valueRowLp.setMargins(0, dp(10), 0, 0);
         card.addView(valueRow, valueRowLp);
 
-        TextView price = text(money(item.price), 26, getColor(R.color.no_white), true);
+        TextView price = text(money(item.price), 28, getColor(R.color.no_white), true);
         price.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
         valueRow.addView(price);
         valueRow.addView(new Space(this), new LinearLayout.LayoutParams(0, dp(1), 1f));
 
-        TextView type = text(item.type, 10, getColor(R.color.no_cyan), true);
-        type.setLetterSpacing(0.08f);
-        valueRow.addView(type);
-
-        String routeLine = item.minutes > 0
-                ? String.format(ptBr, "%.1f km total • %d min", item.totalKm, item.minutes)
-                : String.format(ptBr, "%.1f km total • tempo não informado", item.totalKm);
-        TextView route = text(routeLine, 12, getColor(R.color.no_text_secondary), false);
-        route.setPadding(0, dp(3), 0, 0);
-        card.addView(route);
-
-        String efficiency = String.format(ptBr, "R$ %.2f/km", item.grossPerKm);
-        if (item.grossPerHour > 0) {
-            efficiency += String.format(ptBr, "   •   R$ %.2f/h", item.grossPerHour);
+        if (isBest) {
+            TextView best = text("MELHOR", 9, getColor(R.color.no_cyan_soft), true);
+            best.setPadding(dp(8), dp(5), dp(8), dp(5));
+            best.setBackgroundResource(R.drawable.bg_no_badge_high);
+            valueRow.addView(best);
         }
-        TextView metrics = text(efficiency, 12, getColor(R.color.no_cyan_soft), true);
-        metrics.setPadding(0, dp(7), 0, 0);
-        card.addView(metrics);
+
+        LinearLayout metricsRow = new LinearLayout(this);
+        metricsRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams metricsLp = new LinearLayout.LayoutParams(-1, -2);
+        metricsLp.setMargins(0, dp(10), 0, 0);
+        card.addView(metricsRow, metricsLp);
+
+        LinearLayout distanceBox = metricBox(
+                "DISTÂNCIA",
+                String.format(ptBr, "%.1f km", item.totalKm)
+        );
+        metricsRow.addView(distanceBox, weightedBoxParams(0, 4));
+
+        LinearLayout kmBox = metricBox(
+                "R$/KM",
+                String.format(ptBr, "R$ %.2f", item.grossPerKm)
+        );
+        LinearLayout.LayoutParams kmLp = weightedBoxParams(4, 4);
+        metricsRow.addView(kmBox, kmLp);
+
+        String perHour = item.grossPerHour > 0
+                ? String.format(ptBr, "R$ %.0f", item.grossPerHour)
+                : "—";
+        LinearLayout hourBox = metricBox("R$/H", perHour);
+        metricsRow.addView(hourBox, weightedBoxParams(4, 0));
+
+        String details;
+        if (item.minutes > 0) {
+            details = item.minutes + " min";
+        } else {
+            details = "tempo não informado";
+        }
 
         if (item.pickupKm > 0) {
-            TextView pickup = text(String.format(ptBr,
-                    "Coleta %.1f km • Percurso %.1f km",
+            details += String.format(ptBr,
+                    "  •  coleta %.1f km  •  percurso %.1f km",
                     item.pickupKm,
-                    item.routeKm),
-                    11,
-                    getColor(R.color.no_text_muted),
-                    false);
-            pickup.setPadding(0, dp(4), 0, 0);
-            card.addView(pickup);
+                    item.routeKm);
         }
 
+        TextView footer = text(details, 11, getColor(R.color.no_text_muted), false);
+        footer.setPadding(0, dp(8), 0, 0);
+        card.addView(footer);
+
         return card;
+    }
+
+    private LinearLayout metricBox(String label, String value) {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(9), dp(8), dp(9), dp(8));
+        box.setBackground(roundRect(
+                getColor(R.color.no_metric),
+                dp(12),
+                Color.TRANSPARENT,
+                0
+        ));
+
+        TextView labelView = text(label, 9, getColor(R.color.no_text_muted), true);
+        labelView.setLetterSpacing(0.05f);
+        box.addView(labelView);
+
+        TextView valueView = text(value, 13, getColor(R.color.no_white), true);
+        valueView.setPadding(0, dp(3), 0, 0);
+        box.addView(valueView);
+        return box;
+    }
+
+    private LinearLayout.LayoutParams weightedBoxParams(int left, int right) {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1f);
+        lp.setMargins(dp(left), 0, dp(right), 0);
+        return lp;
+    }
+
+    private String typeLabel(String type) {
+        if (Opportunity.TYPE_RIDE.equals(type)) return "CORRIDA";
+        if (Opportunity.TYPE_DELIVERY.equals(type)) return "ENTREGA";
+        if (Opportunity.TYPE_ROUTE.equals(type)) return "ROTA";
+        return "OFERTA";
     }
 
     private void updateSourceNotification() {
@@ -325,7 +380,7 @@ public class MainActivity extends Activity {
 
         if (time <= 0 || TextUtils.isEmpty(platform)) {
             sourceNotificationText.setText(
-                    "Nenhum alerta compatível detectado ainda. Ative o acesso às notificações para o NÓ identificar quando um aplicativo avisar sobre uma nova oportunidade."
+                    "Nenhum alerta compatível detectado. Ative Notificações para identificar novas oportunidades."
             );
             return;
         }
@@ -382,10 +437,10 @@ public class MainActivity extends Activity {
             else if (Opportunity.TYPE_ROUTE.equals(item.type)) routes++;
         }
 
-        tabAll.setText("Todas (" + currentItems.size() + ")");
-        tabRides.setText("Corridas (" + rides + ")");
-        tabDeliveries.setText("Entregas (" + deliveries + ")");
-        tabRoutes.setText("Rotas (" + routes + ")");
+        tabAll.setText("Todas  " + currentItems.size());
+        tabRides.setText("Corridas  " + rides);
+        tabDeliveries.setText("Entregas  " + deliveries);
+        tabRoutes.setText("Rotas  " + routes);
     }
 
     private void updateTabAppearance() {
@@ -404,24 +459,17 @@ public class MainActivity extends Activity {
                 : getColor(R.color.no_white));
     }
 
-    private void setTabTextSize() {
-        tabAll.setTextSize(11);
-        tabRides.setTextSize(11);
-        tabDeliveries.setTextSize(11);
-        tabRoutes.setTextSize(11);
-    }
-
     private String emptyMessageForFilter() {
         if (Opportunity.TYPE_RIDE.equals(activeFilter)) {
-            return "Nenhuma corrida recente. Abra uma oferta da Uber ou 99 no simulador.";
+            return "Nenhuma corrida recente.";
         }
         if (Opportunity.TYPE_DELIVERY.equals(activeFilter)) {
-            return "Nenhuma entrega completa foi capturada ainda.";
+            return "Nenhuma entrega recente.";
         }
         if (Opportunity.TYPE_ROUTE.equals(activeFilter)) {
-            return "Nenhuma rota completa foi capturada ainda.";
+            return "Nenhuma rota recente.";
         }
-        return "Nenhuma oportunidade recente. Abra uma simulação da Uber ou 99 para começar.";
+        return "Nenhuma oportunidade recente. Abra uma simulação para começar.";
     }
 
     private int brandColor(String platform) {

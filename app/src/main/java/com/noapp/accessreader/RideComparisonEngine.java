@@ -10,7 +10,7 @@ package com.noapp.accessreader;
  */
 public final class RideComparisonEngine {
 
-    private static final double TECHNICAL_TIE_THRESHOLD = 0.03; // 3%
+    private static final double TECHNICAL_TIE_THRESHOLD = 0.015; // 1,5%
 
     private RideComparisonEngine() {
     }

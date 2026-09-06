@@ -4,16 +4,17 @@
     android:layout_height="match_parent"
     android:background="@color/no_navy"
     android:clipToPadding="false"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingLeft="18dp"
-        android:paddingTop="18dp"
-        android:paddingRight="18dp"
-        android:paddingBottom="34dp">
+        android:paddingLeft="16dp"
+        android:paddingTop="14dp"
+        android:paddingRight="16dp"
+        android:paddingBottom="28dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -49,9 +50,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_no_chip"
+                android:paddingLeft="10dp"
+                android:paddingTop="5dp"
+                android:paddingRight="10dp"
+                android:paddingBottom="5dp"
                 android:text="CENTRAL"
                 android:textColor="@color/no_cyan_soft"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -59,20 +64,21 @@
             style="@style/NoHeading"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="Oportunidades em um só lugar" />
+            android:layout_marginTop="4dp"
+            android:text="Central de oportunidades" />
 
         <TextView
             style="@style/NoBody"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="O NÓ reúne corridas, entregas e rotas capturadas com sua autorização e destaca o melhor retorno disponível." />
+            android:maxLines="2"
+            android:text="Compare corridas, entregas e rotas recentes em uma única tela." />
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="3dp"
-            android:layout_marginTop="18dp"
+            android:layout_height="2dp"
+            android:layout_marginTop="14dp"
             android:orientation="horizontal">
 
             <View
@@ -91,43 +97,16 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="14dp"
             android:background="@drawable/bg_no_card"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="14dp">
 
             <TextView
                 style="@style/NoSectionLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="CAPTURA AUTORIZADA" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Leitura da tela"
-                    android:textColor="@color/no_white"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/accessibilityStatusText"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_no_status_inactive"
-                    android:text="VERIFICANDO"
-                    android:textColor="@color/no_orange"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -140,9 +119,40 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:text="Leitura da tela"
+                    android:textColor="@color/no_white"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/accessibilityStatusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_no_status_inactive"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="5dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="5dp"
+                    android:text="VERIFICANDO"
+                    android:textColor="@color/no_orange"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Alertas dos aplicativos"
                     android:textColor="@color/no_white"
-                    android:textSize="15sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -150,32 +160,36 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_no_status_inactive"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="5dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="5dp"
                     android:text="VERIFICANDO"
                     android:textColor="@color/no_orange"
-                    android:textSize="10sp"
+                    android:textSize="9sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="12dp"
                 android:orientation="horizontal">
 
                 <Button
                     android:id="@+id/accessibilityButton"
-                    style="@style/NoSecondaryButton"
+                    style="@style/NoCompactButton"
                     android:layout_width="0dp"
-                    android:layout_height="50dp"
+                    android:layout_height="42dp"
                     android:layout_marginRight="5dp"
                     android:layout_weight="1"
                     android:text="Acessibilidade" />
 
                 <Button
                     android:id="@+id/notificationButton"
-                    style="@style/NoSecondaryButton"
+                    style="@style/NoCompactButton"
                     android:layout_width="0dp"
-                    android:layout_height="50dp"
+                    android:layout_height="42dp"
                     android:layout_marginLeft="5dp"
                     android:layout_weight="1"
                     android:text="Notificações" />
@@ -186,118 +200,235 @@
             android:id="@+id/bestCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:background="@drawable/bg_no_badge_high"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_no_best_card"
             android:orientation="vertical"
-            android:padding="17dp"
+            android:padding="16dp"
             android:visibility="gone">
 
-            <TextView
-                style="@style/NoSectionLabel"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="MELHOR OPORTUNIDADE AGORA" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/NoSectionLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="MELHOR AGORA" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_no_chip"
+                    android:paddingLeft="8dp"
+                    android:paddingTop="4dp"
+                    android:paddingRight="8dp"
+                    android:paddingBottom="4dp"
+                    android:text="RECOMENDADA"
+                    android:textColor="@color/no_cyan_soft"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/bestPlatformText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="7dp"
                 android:text="99 • 99Pop"
                 android:textColor="@color/no_white"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/bestPriceText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
+                android:layout_marginTop="2dp"
                 android:fontFamily="sans-serif-condensed"
+                android:includeFontPadding="false"
                 android:text="R$ 0,00"
                 android:textColor="@color/no_white"
                 android:textSize="34sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/bestMetricsText"
-                style="@style/NoBody"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="0,0 km • R$ 0,00/km • R$ 0,00/h" />
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_no_metric"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        style="@style/NoMetricLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DISTÂNCIA" />
+
+                    <TextView
+                        android:id="@+id/bestDistanceText"
+                        style="@style/NoMetricValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="0,0 km" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="4dp"
+                    android:layout_marginRight="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_no_metric"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        style="@style/NoMetricLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="RETORNO/KM" />
+
+                    <TextView
+                        android:id="@+id/bestPerKmText"
+                        style="@style/NoMetricValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="R$ 0,00" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_no_metric"
+                    android:orientation="vertical"
+                    android:padding="10dp">
+
+                    <TextView
+                        style="@style/NoMetricLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="RETORNO/H" />
+
+                    <TextView
+                        android:id="@+id/bestPerHourText"
+                        style="@style/NoMetricValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="—" />
+                </LinearLayout>
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/bestReasonText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
+                android:layout_marginTop="10dp"
                 android:text="Melhor equilíbrio entre retorno por km e retorno por hora."
                 android:textColor="@color/no_cyan_soft"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold" />
         </LinearLayout>
-
-        <TextView
-            style="@style/NoSectionLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:text="OPORTUNIDADES RECENTES" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="20dp"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <Button
-                android:id="@+id/tabAll"
-                style="@style/NoPrimaryButton"
+            <TextView
+                style="@style/NoSectionLabel"
                 android:layout_width="0dp"
-                android:layout_height="46dp"
-                android:layout_marginRight="3dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Todas" />
+                android:text="OPORTUNIDADES RECENTES" />
 
             <Button
-                android:id="@+id/tabRides"
-                style="@style/NoSecondaryButton"
-                android:layout_width="0dp"
-                android:layout_height="46dp"
-                android:layout_marginLeft="3dp"
-                android:layout_marginRight="3dp"
-                android:layout_weight="1"
-                android:text="Corridas" />
-
-            <Button
-                android:id="@+id/tabDeliveries"
-                style="@style/NoSecondaryButton"
-                android:layout_width="0dp"
-                android:layout_height="46dp"
-                android:layout_marginLeft="3dp"
-                android:layout_marginRight="3dp"
-                android:layout_weight="1"
-                android:text="Entregas" />
-
-            <Button
-                android:id="@+id/tabRoutes"
-                style="@style/NoSecondaryButton"
-                android:layout_width="0dp"
-                android:layout_height="46dp"
-                android:layout_marginLeft="3dp"
-                android:layout_weight="1"
-                android:text="Rotas" />
+                android:id="@+id/refreshButton"
+                style="@style/NoCompactButton"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:minWidth="92dp"
+                android:text="Atualizar" />
         </LinearLayout>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="9dp"
+            android:clipToPadding="false"
+            android:fillViewport="false"
+            android:overScrollMode="never"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/tabAll"
+                    style="@style/NoTabButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginRight="6dp"
+                    android:minWidth="84dp"
+                    android:text="Todas" />
+
+                <Button
+                    android:id="@+id/tabRides"
+                    style="@style/NoTabButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginRight="6dp"
+                    android:minWidth="96dp"
+                    android:text="Corridas" />
+
+                <Button
+                    android:id="@+id/tabDeliveries"
+                    style="@style/NoTabButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:layout_marginRight="6dp"
+                    android:minWidth="96dp"
+                    android:text="Entregas" />
+
+                <Button
+                    android:id="@+id/tabRoutes"
+                    style="@style/NoTabButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:minWidth="82dp"
+                    android:text="Rotas" />
+            </LinearLayout>
+        </HorizontalScrollView>
 
         <TextView
             android:id="@+id/emptyInboxText"
             style="@style/NoBody"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="10dp"
             android:background="@drawable/bg_no_metric"
-            android:padding="16dp"
-            android:text="Nenhuma oportunidade recente. Abra uma simulação da Uber ou 99 para começar." />
+            android:padding="14dp"
+            android:text="Nenhuma oportunidade recente." />
 
         <LinearLayout
             android:id="@+id/opportunitiesContainer"
@@ -309,39 +440,32 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
+            android:layout_marginTop="10dp"
             android:background="@drawable/bg_no_metric"
             android:orientation="vertical"
-            android:padding="14dp">
+            android:padding="13dp">
 
             <TextView
                 style="@style/NoSectionLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ÚLTIMO ALERTA DE APLICATIVO" />
+                android:text="ÚLTIMO ALERTA" />
 
             <TextView
                 android:id="@+id/sourceNotificationText"
                 style="@style/NoBody"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="7dp"
+                android:layout_marginTop="5dp"
+                android:maxLines="3"
                 android:text="Nenhum alerta compatível detectado ainda." />
         </LinearLayout>
 
         <Button
-            android:id="@+id/refreshButton"
-            style="@style/NoPrimaryButton"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="16dp"
-            android:text="Atualizar central" />
-
-        <Button
             android:id="@+id/debugToggleButton"
-            style="@style/NoSecondaryButton"
+            style="@style/NoCompactButton"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="42dp"
             android:layout_marginTop="10dp"
             android:text="Mostrar diagnóstico técnico" />
 
@@ -349,10 +473,10 @@
             android:id="@+id/debugPanel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:background="@drawable/bg_no_metric"
             android:orientation="vertical"
-            android:padding="14dp"
+            android:padding="12dp"
             android:visibility="gone">
 
             <TextView
@@ -365,19 +489,20 @@
                 android:id="@+id/resultText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="8dp"
                 android:fontFamily="sans-serif-monospace"
                 android:text="Nenhuma leitura capturada ainda."
                 android:textColor="@color/no_text_secondary"
                 android:textIsSelectable="true"
-                android:textSize="12sp" />
+                android:textSize="11sp" />
         </LinearLayout>
 
         <TextView
             style="@style/NoBody"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="O ranking usa somente dados capturados. Quando o aplicativo não informa tempo, o NÓ não inventa retorno por hora e reduz a comparação ao que está disponível." />
+            android:layout_marginTop="14dp"
+            android:text="O NÓ compara somente os dados realmente capturados e não inventa métricas ausentes."
+            android:textSize="11sp" />
     </LinearLayout>
 </ScrollView>

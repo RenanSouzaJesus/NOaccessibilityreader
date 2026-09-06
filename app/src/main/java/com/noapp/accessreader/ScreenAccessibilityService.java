@@ -17,6 +17,12 @@ public class ScreenAccessibilityService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null) return;
 
+        CharSequence packageName = event.getPackageName();
+        String currentPackage = packageName == null ? "" : packageName.toString();
+
+        // Não sobrescreve a última captura quando o usuário volta ao próprio app NO.
+        if (getPackageName().equals(currentPackage)) return;
+
         long now = SystemClock.elapsedRealtime();
         if (now - lastRead < 500) return;
         lastRead = now;
@@ -37,10 +43,7 @@ public class ScreenAccessibilityService extends AccessibilityService {
                 getSharedPreferences("no_accessibility", MODE_PRIVATE);
 
         prefs.edit()
-                .putString("package",
-                        event.getPackageName() == null
-                                ? ""
-                                : event.getPackageName().toString())
+                .putString("package", currentPackage)
                 .putString("content", out.toString())
                 .putLong("time", System.currentTimeMillis())
                 .apply();

@@ -7,3 +7,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "NO"
 include(":app")
+include(":simulator")

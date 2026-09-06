@@ -2,8 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
         android:allowBackup="true"
-        android:icon="@drawable/ic_no_lab"
-        android:label="NÓ Lab"
+        android:label="Simulador de Corridas"
         android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
             android:name=".RideSimulatorActivity"

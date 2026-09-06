@@ -7,7 +7,9 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.text.DateFormat;
@@ -16,8 +18,25 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
 
+    private final Locale ptBr = new Locale("pt", "BR");
+
     private TextView statusText;
+    private TextView statusDetailText;
+    private TextView platformChipText;
+    private TextView lastAnalysisText;
+    private TextView emptyOfferText;
+    private LinearLayout offerContent;
+    private TextView classificationBadge;
+    private TextView priceText;
+    private TextView routeSummaryText;
+    private TextView perKmText;
+    private TextView perHourText;
+    private TextView pickupKmText;
+    private TextView tripKmText;
     private TextView resultText;
+    private LinearLayout debugPanel;
+    private Button accessButton;
+    private Button debugToggleButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,9 +44,22 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         statusText = findViewById(R.id.statusText);
+        statusDetailText = findViewById(R.id.statusDetailText);
+        platformChipText = findViewById(R.id.platformChipText);
+        lastAnalysisText = findViewById(R.id.lastAnalysisText);
+        emptyOfferText = findViewById(R.id.emptyOfferText);
+        offerContent = findViewById(R.id.offerContent);
+        classificationBadge = findViewById(R.id.classificationBadge);
+        priceText = findViewById(R.id.priceText);
+        routeSummaryText = findViewById(R.id.routeSummaryText);
+        perKmText = findViewById(R.id.perKmText);
+        perHourText = findViewById(R.id.perHourText);
+        pickupKmText = findViewById(R.id.pickupKmText);
+        tripKmText = findViewById(R.id.tripKmText);
         resultText = findViewById(R.id.resultText);
-
-        Button accessButton = findViewById(R.id.accessButton);
+        debugPanel = findViewById(R.id.debugPanel);
+        accessButton = findViewById(R.id.accessButton);
+        debugToggleButton = findViewById(R.id.debugToggleButton);
         Button refreshButton = findViewById(R.id.refreshButton);
 
         accessButton.setOnClickListener(v ->
@@ -35,6 +67,15 @@ public class MainActivity extends Activity {
         );
 
         refreshButton.setOnClickListener(v -> refreshData());
+
+        debugToggleButton.setOnClickListener(v -> {
+            boolean opening = debugPanel.getVisibility() != View.VISIBLE;
+            debugPanel.setVisibility(opening ? View.VISIBLE : View.GONE);
+            debugToggleButton.setText(opening
+                    ? "Ocultar diagnóstico técnico"
+                    : "Mostrar diagnóstico técnico");
+        });
+
         refreshData();
     }
 
@@ -45,20 +86,14 @@ public class MainActivity extends Activity {
     }
 
     private void refreshData() {
-        statusText.setText(isAccessibilityEnabled()
-                ? "Status: acessibilidade ATIVA"
-                : "Status: acessibilidade DESATIVADA");
+        boolean accessibilityEnabled = isAccessibilityEnabled();
+        updateAccessibilityStatus(accessibilityEnabled);
 
         SharedPreferences prefs = getSharedPreferences("no_accessibility", MODE_PRIVATE);
         boolean hasOffer = prefs.getBoolean("has_offer", false);
 
         if (!hasOffer) {
-            String debugPkg = prefs.getString("debug_package", "");
-            if (TextUtils.isEmpty(debugPkg)) {
-                resultText.setText("Nenhuma corrida analisada ainda.\n\nAbra o Simulador de Corridas e toque em UberX ou 99Pop.");
-            } else {
-                resultText.setText("Nenhuma oferta válida encontrada ainda.\n\nÚltima tela observada: " + debugPkg);
-            }
+            showEmptyOffer(prefs);
             return;
         }
 
@@ -76,27 +111,110 @@ public class MainActivity extends Activity {
         float perHour = prefs.getFloat("gross_per_hour", 0f);
         String rating = prefs.getString("rating", "");
 
-        String when = time > 0
+        emptyOfferText.setVisibility(View.GONE);
+        offerContent.setVisibility(View.VISIBLE);
+
+        platformChipText.setText((platform + " • " + category).toUpperCase(ptBr));
+        priceText.setText(money(price));
+        routeSummaryText.setText(String.format(ptBr,
+                "%.1f km total  •  %d min de viagem", totalKm, tripMinutes));
+        perKmText.setText(String.format(ptBr, "R$ %.2f/km", perKm));
+        perHourText.setText(String.format(ptBr, "R$ %.2f/h", perHour));
+        pickupKmText.setText(String.format(ptBr, "%.1f km", pickupKm));
+        tripKmText.setText(String.format(ptBr, "%.1f km", tripKm));
+        applyClassification(rating);
+
+        if (time > 0) {
+            String when = DateFormat.getTimeInstance(DateFormat.SHORT).format(new Date(time));
+            lastAnalysisText.setText("às " + when);
+        } else {
+            lastAnalysisText.setText("");
+        }
+
+        String detailedWhen = time > 0
                 ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(new Date(time))
                 : "-";
 
-        String summary = String.format(Locale.getDefault(),
-                "ÚLTIMA CORRIDA ANALISADA\n\n" +
-                        "%s • %s\n" +
-                        "Valor: R$ %.2f\n" +
-                        "Até passageiro: %.1f km\n" +
-                        "Viagem: %.1f km • %d min\n" +
-                        "Total: %.1f km\n\n" +
-                        "R$ %.2f/km\n" +
-                        "R$ %.2f/h (tempo da viagem)\n" +
-                        "Classificação: %s\n\n" +
-                        "Pacote: %s\n" +
-                        "Capturado em: %s\n\n" +
-                        "--- CONTEÚDO ACESSÍVEL ---\n%s",
-                platform, category, price, pickupKm, tripKm, tripMinutes, totalKm,
-                perKm, perHour, rating, pkg, when, content);
+        resultText.setText(
+                "Pacote: " + pkg +
+                        "\nCapturado em: " + detailedWhen +
+                        "\n\nPlataforma: " + platform +
+                        "\nCategoria: " + category +
+                        "\nValor: " + money(price) +
+                        "\nColeta: " + String.format(ptBr, "%.1f km", pickupKm) +
+                        "\nViagem: " + String.format(ptBr, "%.1f km / %d min", tripKm, tripMinutes) +
+                        "\nTotal: " + String.format(ptBr, "%.1f km", totalKm) +
+                        "\nRetorno/km: " + String.format(ptBr, "R$ %.2f", perKm) +
+                        "\nRetorno/h: " + String.format(ptBr, "R$ %.2f", perHour) +
+                        "\nClassificação interna: " + rating +
+                        "\n\n--- CONTEÚDO ACESSÍVEL ---\n" + content
+        );
+    }
 
-        resultText.setText(summary);
+    private void updateAccessibilityStatus(boolean enabled) {
+        if (enabled) {
+            statusText.setText("ATIVO");
+            statusText.setTextColor(getColor(R.color.no_cyan_soft));
+            statusText.setBackgroundResource(R.drawable.bg_no_status_active);
+            statusDetailText.setText("O NÓ está pronto para transformar campos visíveis e autorizados em dados comparáveis.");
+            accessButton.setText("Configurar acessibilidade");
+        } else {
+            statusText.setText("DESATIVADO");
+            statusText.setTextColor(getColor(R.color.no_orange));
+            statusText.setBackgroundResource(R.drawable.bg_no_status_inactive);
+            statusDetailText.setText("Ative o serviço para permitir a leitura dos campos exibidos na tela durante os testes.");
+            accessButton.setText("Ativar acessibilidade");
+        }
+    }
+
+    private void showEmptyOffer(SharedPreferences prefs) {
+        offerContent.setVisibility(View.GONE);
+        emptyOfferText.setVisibility(View.VISIBLE);
+        platformChipText.setText("AGUARDANDO OFERTA");
+        lastAnalysisText.setText("");
+
+        String debugPkg = prefs.getString("debug_package", "");
+        String debugContent = prefs.getString("debug_content", "");
+        long debugTime = prefs.getLong("debug_time", 0L);
+
+        if (TextUtils.isEmpty(debugPkg)) {
+            emptyOfferText.setText("Nenhuma oportunidade analisada ainda. Abra o Simulador de Corridas e selecione UberX ou 99Pop.");
+            resultText.setText("Nenhuma leitura capturada ainda.");
+        } else {
+            emptyOfferText.setText("O NÓ está lendo as telas, mas ainda não encontrou uma oferta completa com valor, distância e duração.");
+            String when = debugTime > 0
+                    ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM).format(new Date(debugTime))
+                    : "-";
+            resultText.setText("Última tela observada: " + debugPkg +
+                    "\nCapturada em: " + when +
+                    "\n\n" + debugContent);
+        }
+    }
+
+    private void applyClassification(String rating) {
+        String normalized = rating == null ? "" : rating.toUpperCase(ptBr);
+
+        if (normalized.contains("BOA") || normalized.contains("EXCELENTE")) {
+            classificationBadge.setText("OPORTUNIDADE ALTA");
+            classificationBadge.setTextColor(getColor(R.color.no_cyan_soft));
+            classificationBadge.setBackgroundResource(R.drawable.bg_no_badge_high);
+            return;
+        }
+
+        if (normalized.contains("MÉDIA") || normalized.contains("MEDIA")) {
+            classificationBadge.setText("OPORTUNIDADE MÉDIA");
+            classificationBadge.setTextColor(getColor(R.color.no_orange));
+            classificationBadge.setBackgroundResource(R.drawable.bg_no_badge_medium);
+            return;
+        }
+
+        classificationBadge.setText("OPORTUNIDADE BAIXA");
+        classificationBadge.setTextColor(getColor(R.color.no_low));
+        classificationBadge.setBackgroundResource(R.drawable.bg_no_badge_low);
+    }
+
+    private String money(double value) {
+        return String.format(ptBr, "R$ %.2f", value);
     }
 
     private boolean isAccessibilityEnabled() {

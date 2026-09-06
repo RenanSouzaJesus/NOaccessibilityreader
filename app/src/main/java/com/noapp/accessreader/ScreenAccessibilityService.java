@@ -19,6 +19,7 @@ import android.widget.Space;
 import android.widget.TextView;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -26,8 +27,6 @@ public class ScreenAccessibilityService extends AccessibilityService {
 
     private static final long COMPARISON_WINDOW_MS = 5 * 60 * 1000L;
     private static final String PREFS = "no_accessibility";
-    private static final String UBER_PREFIX = "compare_uber_";
-    private static final String NINETY_NINE_PREFIX = "compare_99_";
 
     private long lastRead = 0L;
     private WindowManager windowManager;
@@ -47,6 +46,7 @@ public class ScreenAccessibilityService extends AccessibilityService {
     protected void onServiceConnected() {
         super.onServiceConnected();
         windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        NoNotificationHelper.ensureChannel(this);
     }
 
     @Override
@@ -62,9 +62,9 @@ public class ScreenAccessibilityService extends AccessibilityService {
             return;
         }
 
-        long now = SystemClock.elapsedRealtime();
-        if (now - lastRead < 250) return;
-        lastRead = now;
+        long nowElapsed = SystemClock.elapsedRealtime();
+        if (nowElapsed - lastRead < 250) return;
+        lastRead = nowElapsed;
 
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root == null) return;
@@ -81,63 +81,104 @@ public class ScreenAccessibilityService extends AccessibilityService {
         root.recycle();
 
         String content = out.toString();
-        RideOfferParser.RideOffer offer = RideOfferParser.parse(content);
+        long capturedAt = System.currentTimeMillis();
+        Opportunity opportunity = UnifiedOpportunityParser.parse(
+                content,
+                currentPackage,
+                "ACCESSIBILITY",
+                capturedAt
+        );
 
-        if (offer == null) {
+        if (opportunity == null) {
             saveDebugCapture(currentPackage, content);
             return;
         }
 
-        saveOffer(currentPackage, content, offer);
-        saveComparisonCandidate(offer);
+        boolean isNew = OpportunityStore.upsert(this, opportunity);
+        if (isNew) NoNotificationHelper.notifyOpportunity(this, opportunity);
 
-        ComparisonPair pair = loadFreshComparisonPair();
-        if (pair != null) {
-            RideComparisonEngine.ComparisonResult comparison =
-                    RideComparisonEngine.compare(pair.uber, pair.ninetyNine);
+        RideOfferParser.RideOffer ride = RideOfferParser.parse(content);
+        if (ride != null) {
+            saveLegacyRide(currentPackage, content, ride);
 
-            if (comparison != null) {
-                String comparisonKey = createComparisonKey(pair.uber, pair.ninetyNine);
-                saveComparison(comparison);
+            ComparisonPair pair = loadFreshRidePair();
+            if (pair != null) {
+                RideComparisonEngine.ComparisonResult comparison =
+                        RideComparisonEngine.compare(pair.uber, pair.ninetyNine);
 
-                if (comparisonKey.equals(dismissedOfferKey)) return;
+                if (comparison != null) {
+                    String comparisonKey = createComparisonKey(pair.uber, pair.ninetyNine);
+                    saveComparison(comparison);
+                    if (comparisonKey.equals(dismissedOfferKey)) return;
 
-                activeOfferKey = comparisonKey;
-                showComparisonOverlay(pair.uber, pair.ninetyNine, comparison);
-                return;
+                    activeOfferKey = comparisonKey;
+                    showComparisonOverlay(pair.uber, pair.ninetyNine, comparison);
+                    return;
+                }
             }
+
+            String offerKey = opportunity.stableKey();
+            if (offerKey.equals(dismissedOfferKey)) return;
+            activeOfferKey = offerKey;
+            showSingleOfferOverlay(ride);
+            return;
         }
 
-        String offerKey = createOfferKey(currentPackage, offer);
-        if (offerKey.equals(dismissedOfferKey)) return;
-
-        activeOfferKey = offerKey;
-        showSingleOfferOverlay(offer);
+        saveLegacyGeneric(currentPackage, content, opportunity);
+        String genericKey = opportunity.stableKey();
+        if (genericKey.equals(dismissedOfferKey)) return;
+        activeOfferKey = genericKey;
+        showGenericOpportunityOverlay(opportunity);
     }
 
-    private String createOfferKey(String pkg, RideOfferParser.RideOffer offer) {
-        return String.format(Locale.ROOT,
-                "%s|%s|%s|%.2f|%.2f|%.2f|%d",
-                pkg,
-                offer.platform,
-                offer.category,
-                offer.price,
-                offer.pickupKm,
-                offer.tripKm,
-                offer.tripMinutes);
+    private ComparisonPair loadFreshRidePair() {
+        List<Opportunity> fresh = OpportunityStore.listFresh(this, COMPARISON_WINDOW_MS);
+        Opportunity uber = null;
+        Opportunity ninetyNine = null;
+
+        for (Opportunity item : fresh) {
+            if (!Opportunity.TYPE_RIDE.equals(item.type)) continue;
+            if (uber == null && "Uber".equalsIgnoreCase(item.platform)) uber = item;
+            if (ninetyNine == null && "99".equalsIgnoreCase(item.platform)) ninetyNine = item;
+            if (uber != null && ninetyNine != null) break;
+        }
+
+        if (uber == null || ninetyNine == null) return null;
+        return new ComparisonPair(asRide(uber), asRide(ninetyNine));
+    }
+
+    private RideOfferParser.RideOffer asRide(Opportunity item) {
+        return new RideOfferParser.RideOffer(
+                item.platform,
+                item.category,
+                item.price,
+                item.pickupKm,
+                item.routeKm,
+                item.minutes,
+                item.totalKm,
+                item.grossPerKm,
+                item.grossPerHour,
+                item.rating
+        );
     }
 
     private String createComparisonKey(
             RideOfferParser.RideOffer uber,
             RideOfferParser.RideOffer ninetyNine
     ) {
-        return "COMPARE|"
-                + createOfferKey("Uber", uber)
-                + "|VS|"
-                + createOfferKey("99", ninetyNine);
+        return String.format(Locale.ROOT,
+                "COMPARE|UBER|%.2f|%.2f|%.2f|%d|99|%.2f|%.2f|%.2f|%d",
+                uber.price,
+                uber.pickupKm,
+                uber.tripKm,
+                uber.tripMinutes,
+                ninetyNine.price,
+                ninetyNine.pickupKm,
+                ninetyNine.tripKm,
+                ninetyNine.tripMinutes);
     }
 
-    private void saveOffer(String pkg, String content, RideOfferParser.RideOffer offer) {
+    private void saveLegacyRide(String pkg, String content, RideOfferParser.RideOffer offer) {
         getSharedPreferences(PREFS, MODE_PRIVATE)
                 .edit()
                 .putString("package", pkg)
@@ -157,73 +198,24 @@ public class ScreenAccessibilityService extends AccessibilityService {
                 .apply();
     }
 
-    private void saveComparisonCandidate(RideOfferParser.RideOffer offer) {
-        String prefix;
-        if ("Uber".equalsIgnoreCase(offer.platform)) {
-            prefix = UBER_PREFIX;
-        } else if ("99".equalsIgnoreCase(offer.platform)) {
-            prefix = NINETY_NINE_PREFIX;
-        } else {
-            return;
-        }
-
+    private void saveLegacyGeneric(String pkg, String content, Opportunity opportunity) {
         getSharedPreferences(PREFS, MODE_PRIVATE)
                 .edit()
-                .putLong(prefix + "time", System.currentTimeMillis())
-                .putString(prefix + "platform", offer.platform)
-                .putString(prefix + "category", offer.category)
-                .putFloat(prefix + "price", (float) offer.price)
-                .putFloat(prefix + "pickup_km", (float) offer.pickupKm)
-                .putFloat(prefix + "trip_km", (float) offer.tripKm)
-                .putInt(prefix + "trip_minutes", offer.tripMinutes)
-                .putFloat(prefix + "total_km", (float) offer.totalKm)
-                .putFloat(prefix + "per_km", (float) offer.grossPerKm)
-                .putFloat(prefix + "per_hour", (float) offer.grossPerHour)
-                .putString(prefix + "rating", offer.rating)
+                .putString("package", pkg)
+                .putString("content", content)
+                .putLong("time", System.currentTimeMillis())
+                .putBoolean("has_offer", true)
+                .putString("platform", opportunity.platform)
+                .putString("category", opportunity.category)
+                .putFloat("price", (float) opportunity.price)
+                .putFloat("pickup_km", (float) opportunity.pickupKm)
+                .putFloat("trip_km", (float) opportunity.routeKm)
+                .putInt("trip_minutes", opportunity.minutes)
+                .putFloat("total_km", (float) opportunity.totalKm)
+                .putFloat("gross_per_km", (float) opportunity.grossPerKm)
+                .putFloat("gross_per_hour", (float) opportunity.grossPerHour)
+                .putString("rating", opportunity.rating)
                 .apply();
-    }
-
-    private ComparisonPair loadFreshComparisonPair() {
-        RideOfferParser.RideOffer uber = loadCandidate(UBER_PREFIX);
-        RideOfferParser.RideOffer ninetyNine = loadCandidate(NINETY_NINE_PREFIX);
-        if (uber == null || ninetyNine == null) return null;
-        return new ComparisonPair(uber, ninetyNine);
-    }
-
-    private RideOfferParser.RideOffer loadCandidate(String prefix) {
-        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        long savedAt = prefs.getLong(prefix + "time", 0L);
-        if (savedAt <= 0 || System.currentTimeMillis() - savedAt > COMPARISON_WINDOW_MS) {
-            return null;
-        }
-
-        String platform = prefs.getString(prefix + "platform", "");
-        String category = prefs.getString(prefix + "category", "Corrida");
-        double price = prefs.getFloat(prefix + "price", 0f);
-        double pickupKm = prefs.getFloat(prefix + "pickup_km", 0f);
-        double tripKm = prefs.getFloat(prefix + "trip_km", 0f);
-        int tripMinutes = prefs.getInt(prefix + "trip_minutes", 0);
-        double totalKm = prefs.getFloat(prefix + "total_km", 0f);
-        double perKm = prefs.getFloat(prefix + "per_km", 0f);
-        double perHour = prefs.getFloat(prefix + "per_hour", 0f);
-        String rating = prefs.getString(prefix + "rating", "");
-
-        if (platform.isEmpty() || price <= 0 || tripKm <= 0 || tripMinutes <= 0) {
-            return null;
-        }
-
-        return new RideOfferParser.RideOffer(
-                platform,
-                category,
-                price,
-                pickupKm,
-                tripKm,
-                tripMinutes,
-                totalKm,
-                perKm,
-                perHour,
-                rating
-        );
     }
 
     private void saveComparison(RideComparisonEngine.ComparisonResult result) {
@@ -256,10 +248,7 @@ public class ScreenAccessibilityService extends AccessibilityService {
 
         addHeader(offer.platform + " • " + offer.category);
         addAccentLine();
-
-        TextView eyebrow = text("DECISÃO ECONÔMICA", 10, getColor(R.color.no_cyan), Typeface.BOLD);
-        eyebrow.setLetterSpacing(0.12f);
-        overlayContainer.addView(eyebrow);
+        addEyebrow("DECISÃO ECONÔMICA");
 
         TextView badge = opportunityBadge(offer.rating);
         LinearLayout.LayoutParams badgeLp = new LinearLayout.LayoutParams(-2, -2);
@@ -267,36 +256,19 @@ public class ScreenAccessibilityService extends AccessibilityService {
         overlayContainer.addView(badge, badgeLp);
 
         Locale ptBr = new Locale("pt", "BR");
-        TextView price = text(String.format(ptBr, "R$ %.2f", offer.price),
-                34, getColor(R.color.no_white), Typeface.BOLD);
-        price.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
-        LinearLayout.LayoutParams priceLp = new LinearLayout.LayoutParams(-1, -2);
-        priceLp.setMargins(0, dp(8), 0, 0);
-        overlayContainer.addView(price, priceLp);
-
+        addPrice(String.format(ptBr, "R$ %.2f", offer.price));
         overlayContainer.addView(text(String.format(ptBr,
                 "%.1f km total  •  %d min de viagem",
                 offer.totalKm,
                 offer.tripMinutes),
                 13, getColor(R.color.no_text_secondary), Typeface.NORMAL));
 
-        LinearLayout metrics = new LinearLayout(this);
-        metrics.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams metricsLp = new LinearLayout.LayoutParams(-1, -2);
-        metricsLp.setMargins(0, dp(12), 0, 0);
-        overlayContainer.addView(metrics, metricsLp);
-
-        LinearLayout kmBox = metricBox("RETORNO / KM",
-                String.format(ptBr, "R$ %.2f/km", offer.grossPerKm));
-        LinearLayout.LayoutParams a = new LinearLayout.LayoutParams(0, -2, 1f);
-        a.setMargins(0, 0, dp(5), 0);
-        metrics.addView(kmBox, a);
-
-        LinearLayout hourBox = metricBox("RETORNO / HORA",
-                String.format(ptBr, "R$ %.2f/h", offer.grossPerHour));
-        LinearLayout.LayoutParams b = new LinearLayout.LayoutParams(0, -2, 1f);
-        b.setMargins(dp(5), 0, 0, 0);
-        metrics.addView(hourBox, b);
+        addMetricPair(
+                "RETORNO / KM",
+                String.format(ptBr, "R$ %.2f/km", offer.grossPerKm),
+                "RETORNO / HORA",
+                String.format(ptBr, "R$ %.2f/h", offer.grossPerHour)
+        );
 
         LinearLayout details = new LinearLayout(this);
         details.setOrientation(LinearLayout.HORIZONTAL);
@@ -315,7 +287,68 @@ public class ScreenAccessibilityService extends AccessibilityService {
         trip.setPadding(0, dp(5), 0, dp(5));
         details.addView(trip, new LinearLayout.LayoutParams(0, -2, 1f));
 
-        addHint("Se outra plataforma aparecer nos próximos 5 min, o NÓ compara as duas automaticamente.");
+        addHint("O NÓ guarda esta oportunidade no inbox. Se outra plataforma aparecer, a comparação é atualizada.");
+        addOkButton("OK  •  FECHAR ANÁLISE");
+        attachOverlayIfNeeded();
+    }
+
+    private void showGenericOpportunityOverlay(Opportunity opportunity) {
+        ensureOverlayContainer();
+        overlayContainer.removeAllViews();
+
+        addHeader(opportunity.platform + " • " + opportunity.category);
+        addAccentLine();
+        addEyebrow(opportunity.type + " • ANÁLISE NÓ");
+
+        TextView badge = opportunityBadge(opportunity.rating);
+        LinearLayout.LayoutParams badgeLp = new LinearLayout.LayoutParams(-2, -2);
+        badgeLp.setMargins(0, dp(8), 0, 0);
+        overlayContainer.addView(badge, badgeLp);
+
+        Locale ptBr = new Locale("pt", "BR");
+        addPrice(String.format(ptBr, "R$ %.2f", opportunity.price));
+
+        String summary = opportunity.minutes > 0
+                ? String.format(ptBr, "%.1f km total  •  %d min estimados", opportunity.totalKm, opportunity.minutes)
+                : String.format(ptBr, "%.1f km total  •  tempo não informado", opportunity.totalKm);
+        overlayContainer.addView(text(summary, 13,
+                getColor(R.color.no_text_secondary), Typeface.NORMAL));
+
+        String perHour = opportunity.grossPerHour > 0
+                ? String.format(ptBr, "R$ %.2f/h", opportunity.grossPerHour)
+                : "SEM TEMPO";
+        addMetricPair(
+                "RETORNO / KM",
+                String.format(ptBr, "R$ %.2f/km", opportunity.grossPerKm),
+                "RETORNO / HORA",
+                perHour
+        );
+
+        String pickupLabel = opportunity.pickupKm > 0
+                ? String.format(ptBr, "Coleta  %.1f km", opportunity.pickupKm)
+                : "Coleta  não informada";
+        String routeLabel = String.format(ptBr, "Percurso  %.1f km", opportunity.routeKm);
+
+        LinearLayout details = new LinearLayout(this);
+        details.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams detailsLp = new LinearLayout.LayoutParams(-1, -2);
+        detailsLp.setMargins(0, dp(10), 0, 0);
+        overlayContainer.addView(details, detailsLp);
+
+        TextView pickup = text(pickupLabel, 12,
+                getColor(R.color.no_text_secondary), Typeface.BOLD);
+        pickup.setPadding(0, dp(5), 0, dp(5));
+        details.addView(pickup, new LinearLayout.LayoutParams(0, -2, 1f));
+
+        TextView route = text(routeLabel, 12,
+                getColor(R.color.no_text_secondary), Typeface.BOLD);
+        route.setGravity(Gravity.END);
+        route.setPadding(0, dp(5), 0, dp(5));
+        details.addView(route, new LinearLayout.LayoutParams(0, -2, 1f));
+
+        addHint(opportunity.grossPerHour > 0
+                ? "Esta oportunidade já pode entrar no ranking completo por km e por hora."
+                : "Sem duração, o NÓ mostra o retorno por km mas não inventa um retorno por hora.");
         addOkButton("OK  •  FECHAR ANÁLISE");
         attachOverlayIfNeeded();
     }
@@ -330,11 +363,7 @@ public class ScreenAccessibilityService extends AccessibilityService {
 
         addHeader("COMPARADOR");
         addAccentLine();
-
-        TextView eyebrow = text("DUAS OFERTAS • UMA DECISÃO", 10,
-                getColor(R.color.no_cyan), Typeface.BOLD);
-        eyebrow.setLetterSpacing(0.10f);
-        overlayContainer.addView(eyebrow);
+        addEyebrow("DUAS OFERTAS • UMA DECISÃO");
 
         String winnerTitle = comparison.technicalTie
                 ? "EMPATE TÉCNICO"
@@ -362,7 +391,7 @@ public class ScreenAccessibilityService extends AccessibilityService {
                 "99"));
 
         addComparisonInsight(uber, ninetyNine, comparison);
-        addHint("Comparação válida entre as últimas ofertas capturadas nos últimos 5 minutos.");
+        addHint("As duas corridas também ficam salvas na Central de oportunidades do NÓ.");
         addOkButton("OK  •  FECHAR COMPARAÇÃO");
         attachOverlayIfNeeded();
     }
@@ -503,7 +532,6 @@ public class ScreenAccessibilityService extends AccessibilityService {
         LinearLayout brand = new LinearLayout(this);
         brand.setOrientation(LinearLayout.HORIZONTAL);
         brand.setGravity(Gravity.BOTTOM);
-
         brand.addView(text("NÓ", 26, getColor(R.color.no_white), Typeface.BOLD));
         brand.addView(text(".", 26, getColor(R.color.no_cyan), Typeface.BOLD));
         header.addView(brand);
@@ -519,7 +547,6 @@ public class ScreenAccessibilityService extends AccessibilityService {
                 getColor(R.color.no_border),
                 dp(1)));
         header.addView(chip);
-
         overlayContainer.addView(header, new LinearLayout.LayoutParams(-1, -2));
     }
 
@@ -537,6 +564,38 @@ public class ScreenAccessibilityService extends AccessibilityService {
         View orange = new View(this);
         orange.setBackgroundColor(getColor(R.color.no_orange));
         accent.addView(orange, new LinearLayout.LayoutParams(0, dp(3), 1f));
+    }
+
+    private void addEyebrow(String value) {
+        TextView eyebrow = text(value, 10, getColor(R.color.no_cyan), Typeface.BOLD);
+        eyebrow.setLetterSpacing(0.10f);
+        overlayContainer.addView(eyebrow);
+    }
+
+    private void addPrice(String value) {
+        TextView price = text(value, 34, getColor(R.color.no_white), Typeface.BOLD);
+        price.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
+        LinearLayout.LayoutParams priceLp = new LinearLayout.LayoutParams(-1, -2);
+        priceLp.setMargins(0, dp(8), 0, 0);
+        overlayContainer.addView(price, priceLp);
+    }
+
+    private void addMetricPair(String labelA, String valueA, String labelB, String valueB) {
+        LinearLayout metrics = new LinearLayout(this);
+        metrics.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams metricsLp = new LinearLayout.LayoutParams(-1, -2);
+        metricsLp.setMargins(0, dp(12), 0, 0);
+        overlayContainer.addView(metrics, metricsLp);
+
+        LinearLayout first = metricBox(labelA, valueA);
+        LinearLayout.LayoutParams a = new LinearLayout.LayoutParams(0, -2, 1f);
+        a.setMargins(0, 0, dp(5), 0);
+        metrics.addView(first, a);
+
+        LinearLayout second = metricBox(labelB, valueB);
+        LinearLayout.LayoutParams b = new LinearLayout.LayoutParams(0, -2, 1f);
+        b.setMargins(dp(5), 0, 0, 0);
+        metrics.addView(second, b);
     }
 
     private TextView opportunityBadge(String rating) {
@@ -610,8 +669,7 @@ public class ScreenAccessibilityService extends AccessibilityService {
     }
 
     private void attachOverlayIfNeeded() {
-        if (windowManager == null) return;
-        if (overlayAttached) return;
+        if (windowManager == null || overlayAttached) return;
 
         int screenWidth = getResources().getDisplayMetrics().widthPixels;
         int overlayWidth = Math.min(dp(334), screenWidth - dp(20));
@@ -763,10 +821,7 @@ public class ScreenAccessibilityService extends AccessibilityService {
         final RideOfferParser.RideOffer uber;
         final RideOfferParser.RideOffer ninetyNine;
 
-        ComparisonPair(
-                RideOfferParser.RideOffer uber,
-                RideOfferParser.RideOffer ninetyNine
-        ) {
+        ComparisonPair(RideOfferParser.RideOffer uber, RideOfferParser.RideOffer ninetyNine) {
             this.uber = uber;
             this.ninetyNine = ninetyNine;
         }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="no_navy">#071F34</color>
+    <color name="no_navy_deep">#041727</color>
+    <color name="no_card">#0C2A43</color>
+    <color name="no_card_soft">#102F49</color>
+    <color name="no_metric">#082238</color>
+    <color name="no_cyan">#16C7E8</color>
+    <color name="no_cyan_soft">#8EE7F4</color>
+    <color name="no_orange">#F39A18</color>
+    <color name="no_white">#F7FAFC</color>
+    <color name="no_text_secondary">#ADC0CE</color>
+    <color name="no_text_muted">#7F9AAE</color>
+    <color name="no_border">#1A4864</color>
+    <color name="no_high_bg">#123C43</color>
+    <color name="no_medium_bg">#4A371C</color>
+    <color name="no_low_bg">#442429</color>
+    <color name="no_low">#F27878</color>
+</resources>

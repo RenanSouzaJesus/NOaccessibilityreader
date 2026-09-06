@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">NO</string>
-    <string name="accessibility_desc">Lê textos acessíveis da tela ativa para testes locais.</string>
+    <string name="app_name">NÓ</string>
+    <string name="accessibility_desc">Com permissão explícita, o NÓ lê os campos necessários exibidos na tela para transformar oportunidades em dados comparáveis.</string>
 </resources>

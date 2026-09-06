@@ -10,429 +10,433 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Space;
 import android.widget.TextView;
 
-import java.util.Locale;
-
 public class RideSimulatorActivity extends Activity {
 
-    private final int navy = Color.rgb(7, 31, 52);
-    private final int navyDeep = Color.rgb(4, 23, 39);
-    private final int card = Color.rgb(12, 42, 67);
-    private final int metric = Color.rgb(8, 34, 56);
-    private final int cyan = Color.rgb(22, 199, 232);
-    private final int cyanSoft = Color.rgb(142, 231, 244);
-    private final int orange = Color.rgb(243, 154, 24);
-    private final int white = Color.rgb(247, 250, 252);
-    private final int muted = Color.rgb(173, 192, 206);
-    private final int mutedDark = Color.rgb(127, 154, 174);
-    private final int border = Color.rgb(26, 72, 100);
+    private static final int UBER_BLACK = Color.rgb(0, 0, 0);
+    private static final int UBER_WHITE = Color.rgb(255, 255, 255);
+    private static final int UBER_MAP = Color.rgb(232, 237, 240);
+    private static final int UBER_MUTED = Color.rgb(95, 99, 104);
+    private static final int UBER_BLUE = Color.rgb(39, 110, 241);
+
+    private static final int NINE_YELLOW = Color.rgb(255, 214, 0);
+    private static final int NINE_ORANGE = Color.rgb(255, 145, 0);
+    private static final int NINE_BLACK = Color.rgb(28, 28, 28);
+    private static final int NINE_WHITE = Color.rgb(255, 255, 255);
+    private static final int NINE_BG = Color.rgb(244, 244, 244);
+    private static final int NINE_MUTED = Color.rgb(101, 101, 101);
+    private static final int NINE_GREEN = Color.rgb(24, 151, 101);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().setStatusBarColor(navyDeep);
-        getWindow().setNavigationBarColor(navyDeep);
         showHome();
     }
 
     private void showHome() {
-        LinearLayout root = baseLayout();
-        addBrandHeader(root, "LAB • SIMULADOR");
+        getWindow().setStatusBarColor(Color.rgb(15, 15, 15));
+        getWindow().setNavigationBarColor(Color.rgb(15, 15, 15));
 
-        root.addView(sectionLabel("AMBIENTE DE TESTE"));
-        root.addView(title("Teste o HUD do NÓ\nantes de uma corrida real", 29));
-        root.addView(subtitle("As telas abaixo imitam ofertas de mobilidade para validar leitura, parser, cálculos e overlay."));
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(20), dp(24), dp(20), dp(32));
+        root.setBackgroundColor(Color.rgb(15, 15, 15));
 
-        LinearLayout uberCard = optionCard("UberX", "R$ 28,40", "3,1 km coleta • 6,2 km trajeto • 14 min", cyan);
-        uberCard.setOnClickListener(v -> showOffer(true));
-        uberCard.setContentDescription("Simular oferta UberX");
-        root.addView(uberCard);
+        root.addView(text("Simulador de Corridas", 30, Color.WHITE, true));
 
-        LinearLayout popCard = optionCard("99Pop", "R$ 31,20", "2,4 km coleta • 7,0 km trajeto • 16 min", orange);
-        popCard.setOnClickListener(v -> showOffer(false));
-        popCard.setContentDescription("Simular oferta 99Pop");
-        root.addView(popCard);
+        TextView subtitle = text(
+                "Escolha uma plataforma. A tela da Uber imita a Uber; a tela da 99 imita a 99. O overlay continua com a identidade visual do NÓ.",
+                15,
+                Color.rgb(185, 185, 185),
+                false
+        );
+        subtitle.setPadding(0, dp(8), 0, dp(16));
+        root.addView(subtitle);
 
-        TextView info = subtitle("Fluxo de teste: mantenha a acessibilidade do NÓ ativa, abra uma oferta e confirme se o HUD aparece por cima da tela. O HUD só fecha ao tocar em OK.");
-        info.setPadding(0, dp(18), 0, 0);
+        root.addView(homeButton("Uber • UberX", UBER_WHITE, UBER_BLACK,
+                v -> showUberOffer("28,40", "3,1", "6,2", "14")));
+
+        root.addView(homeButton("99 • 99Pop", NINE_YELLOW, NINE_BLACK,
+                v -> show99Offer("31,20", "2,4", "7,0", "16")));
+
+        TextView info = text(
+                "Mantenha a acessibilidade do NÓ ativa. Ao abrir uma oferta, o HUD do NÓ deve aparecer por cima e permanecer até você tocar em OK.",
+                14,
+                Color.rgb(165, 165, 165),
+                false
+        );
+        info.setPadding(0, dp(24), 0, 0);
         root.addView(info);
 
-        setContentView(wrap(root));
+        setContentView(wrap(root, Color.rgb(15, 15, 15)));
     }
 
-    private void showOffer(boolean uber) {
-        LinearLayout root = baseLayout();
-        addBrandHeader(root, "LAB • OFERTA SIMULADA");
-        root.addView(secondaryButton("← Voltar ao simulador", v -> showHome()));
+    private void showUberOffer(String price, String pickupKm, String tripKm, String tripMin) {
+        getWindow().setStatusBarColor(UBER_BLACK);
+        getWindow().setNavigationBarColor(UBER_BLACK);
 
-        String platform = uber ? "Uber" : "99";
-        String category = uber ? "UberX" : "99Pop";
-        String price = uber ? "28,40" : "31,20";
-        String pickupKm = uber ? "3,1" : "2,4";
-        String tripKm = uber ? "6,2" : "7,0";
-        String tripMin = uber ? "14" : "16";
-        String pickupAddress = uber ? "Rua das Flores, 123 - Centro" : "Av. Brasil, 456 - Centro";
-        String destination = uber ? "Shopping Sul" : "Mercado Municipal";
+        LinearLayout screen = new LinearLayout(this);
+        screen.setOrientation(LinearLayout.VERTICAL);
+        screen.setBackgroundColor(UBER_MAP);
 
-        root.addView(sectionLabel("SIMULAÇÃO • " + platform.toUpperCase(Locale.ROOT)));
-        root.addView(title("Oferta " + category, 27));
+        FrameLayout map = new FrameLayout(this);
+        map.setBackgroundColor(UBER_MAP);
+        map.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(250)));
 
-        LinearLayout offer = cardLayout();
+        TextView mapTitle = text("Centro", 20, Color.rgb(90, 100, 108), true);
+        FrameLayout.LayoutParams mt = new FrameLayout.LayoutParams(-2, -2);
+        mt.leftMargin = dp(22);
+        mt.topMargin = dp(44);
+        map.addView(mapTitle, mt);
 
-        LinearLayout offerHeader = new LinearLayout(this);
-        offerHeader.setOrientation(LinearLayout.HORIZONTAL);
-        offerHeader.setGravity(Gravity.CENTER_VERTICAL);
-        TextView platformText = title(platform, 30);
-        offerHeader.addView(platformText);
-        offerHeader.addView(new Space(this), new LinearLayout.LayoutParams(0, dp(1), 1f));
-        TextView categoryChip = chip(category, uber ? cyan : orange);
-        offerHeader.addView(categoryChip);
-        offer.addView(offerHeader);
+        TextView street1 = text("Av. Brasil", 13, Color.rgb(128, 136, 142), false);
+        FrameLayout.LayoutParams s1 = new FrameLayout.LayoutParams(-2, -2);
+        s1.leftMargin = dp(40);
+        s1.topMargin = dp(112);
+        map.addView(street1, s1);
 
-        TextView priceView = title("R$ " + price, 42);
-        priceView.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
-        priceView.setPadding(0, dp(12), 0, dp(2));
-        offer.addView(priceView);
+        TextView street2 = text("Rua das Flores", 13, Color.rgb(128, 136, 142), false);
+        FrameLayout.LayoutParams s2 = new FrameLayout.LayoutParams(-2, -2);
+        s2.rightMargin = dp(34);
+        s2.topMargin = dp(170);
+        s2.gravity = Gravity.END;
+        map.addView(street2, s2);
 
-        TextView rating = line(uber ? "★ 4,85 (1200+ viagens)" : "★ 4,78 (890+ viagens)");
-        rating.setContentDescription("Avaliação do passageiro");
-        offer.addView(rating);
+        TextView driverDot = text("●", 26, UBER_BLUE, true);
+        FrameLayout.LayoutParams d = new FrameLayout.LayoutParams(-2, -2);
+        d.leftMargin = dp(155);
+        d.topMargin = dp(105);
+        map.addView(driverDot, d);
 
-        addAccentDivider(offer);
+        TextView pickupDot = text("●", 20, UBER_BLACK, true);
+        FrameLayout.LayoutParams p = new FrameLayout.LayoutParams(-2, -2);
+        p.rightMargin = dp(72);
+        p.bottomMargin = dp(34);
+        p.gravity = Gravity.END | Gravity.BOTTOM;
+        map.addView(pickupDot, p);
 
-        TextView pickup = line(pickupKm + " km até o passageiro");
-        pickup.setContentDescription("Distância até o passageiro: " + pickupKm + " quilômetros");
-        offer.addView(pickup);
-        offer.addView(smallLine(pickupAddress));
+        screen.addView(map);
 
-        TextView trip = line(tripKm + " km • " + tripMin + " min de viagem");
-        trip.setContentDescription("Viagem: " + tripKm + " quilômetros e " + tripMin + " minutos");
-        offer.addView(trip);
-        offer.addView(smallLine("Destino: " + destination));
-
-        Button accept = primaryButton(uber ? "Aceitar" : "Aceitar corrida", v -> { });
-        accept.setContentDescription("Botão simulado de aceitar corrida");
-        offer.addView(accept);
-
-        TextView disclaimer = smallLine("Tela simulada para testes. Nenhuma corrida real será aceita.");
-        disclaimer.setPadding(0, dp(10), 0, 0);
-        offer.addView(disclaimer);
-        root.addView(offer);
-
-        root.addView(sectionLabel("AJUSTE MANUAL"));
-        root.addView(title("Crie outros cenários", 23));
-        root.addView(subtitle("Altere os números para conferir se o NÓ atualiza o cálculo e abre uma nova análise."));
-
-        root.addView(inputLabel("VALOR EM R$"));
-        EditText priceInput = numberInput("Ex.: 31,20", price);
-        root.addView(priceInput);
-
-        root.addView(inputLabel("KM ATÉ O PASSAGEIRO"));
-        EditText pickupInput = numberInput("Ex.: 2,4", pickupKm);
-        root.addView(pickupInput);
-
-        root.addView(inputLabel("KM DA VIAGEM"));
-        EditText tripInput = numberInput("Ex.: 7,0", tripKm);
-        root.addView(tripInput);
-
-        root.addView(inputLabel("MINUTOS DA VIAGEM"));
-        EditText minInput = numberInput("Ex.: 16", tripMin);
-        root.addView(minInput);
-
-        Button update = primaryButton("Atualizar oferta simulada", v -> {
-            String p = valueOr(priceInput, price);
-            String pk = valueOr(pickupInput, pickupKm);
-            String tk = valueOr(tripInput, tripKm);
-            String tm = valueOr(minInput, tripMin);
-            showCustomOffer(uber, p, pk, tk, tm);
-        });
-        root.addView(update);
-
-        setContentView(wrap(root));
-    }
-
-    private void showCustomOffer(boolean uber, String price, String pickupKm, String tripKm, String tripMin) {
-        LinearLayout root = baseLayout();
-        addBrandHeader(root, "LAB • CENÁRIO PERSONALIZADO");
-        root.addView(secondaryButton("← Voltar ao início", v -> showHome()));
-
-        String platform = uber ? "Uber" : "99";
-        String category = uber ? "UberX" : "99Pop";
-
-        root.addView(sectionLabel("OFERTA ATUALIZADA"));
-        root.addView(title(platform + " • " + category, 27));
-
-        LinearLayout offer = cardLayout();
-        offer.addView(chip(platform + " • " + category, uber ? cyan : orange));
-        TextView priceView = title("R$ " + price, 42);
-        priceView.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
-        priceView.setPadding(0, dp(12), 0, dp(2));
-        offer.addView(priceView);
-        offer.addView(line(pickupKm + " km até o passageiro"));
-        offer.addView(line(tripKm + " km • " + tripMin + " min de viagem"));
-
-        double totalKm = parseNumber(pickupKm) + parseNumber(tripKm);
-        double amount = parseNumber(price);
-        if (totalKm > 0) {
-            addAccentDivider(offer);
-            LinearLayout metrics = new LinearLayout(this);
-            metrics.setOrientation(LinearLayout.HORIZONTAL);
-            TextView total = metricValue("TOTAL", String.format(Locale.getDefault(), "%.1f km", totalKm));
-            TextView perKm = metricValue("R$/KM", String.format(Locale.getDefault(), "R$ %.2f", amount / totalKm));
-            LinearLayout.LayoutParams a = new LinearLayout.LayoutParams(0, -2, 1f);
-            a.setMargins(0, 0, dp(5), 0);
-            metrics.addView(total, a);
-            LinearLayout.LayoutParams b = new LinearLayout.LayoutParams(0, -2, 1f);
-            b.setMargins(dp(5), 0, 0, 0);
-            metrics.addView(perKm, b);
-            offer.addView(metrics);
-        }
-
-        offer.addView(smallLine("Dados alterados manualmente para validar uma nova chave de oferta no leitor."));
-        root.addView(offer);
-        root.addView(primaryButton("Editar novamente", v -> showOffer(uber)));
-        setContentView(wrap(root));
-    }
-
-    private void addBrandHeader(LinearLayout root, String label) {
-        LinearLayout logoRow = new LinearLayout(this);
-        logoRow.setOrientation(LinearLayout.HORIZONTAL);
-        logoRow.setGravity(Gravity.BOTTOM);
-        TextView logo = title("NÓ", 39);
-        logo.setPadding(0, 0, 0, 0);
-        logoRow.addView(logo);
-        TextView dot = title(".", 39);
-        dot.setTextColor(cyan);
-        dot.setPadding(0, 0, 0, 0);
-        logoRow.addView(dot);
-        logoRow.addView(new Space(this), new LinearLayout.LayoutParams(0, dp(1), 1f));
-        TextView lab = chip(label, cyan);
-        logoRow.addView(lab);
-        root.addView(logoRow);
-        addAccentDivider(root);
-    }
-
-    private LinearLayout optionCard(String name, String price, String detail, int accentColor) {
-        LinearLayout box = cardLayout();
-        box.setClickable(true);
-        box.setFocusable(true);
+        LinearLayout sheet = new LinearLayout(this);
+        sheet.setOrientation(LinearLayout.VERTICAL);
+        sheet.setPadding(dp(22), dp(16), dp(22), dp(24));
+        sheet.setBackground(roundRect(UBER_WHITE, dp(24), Color.TRANSPARENT, 0));
 
         LinearLayout top = new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.addView(title(name, 26));
+
+        TextView badge = text("UberX", 15, UBER_WHITE, true);
+        badge.setPadding(dp(12), dp(7), dp(12), dp(7));
+        badge.setBackground(roundRect(UBER_BLACK, dp(8), Color.TRANSPARENT, 0));
+        top.addView(badge);
         top.addView(new Space(this), new LinearLayout.LayoutParams(0, dp(1), 1f));
-        top.addView(chip("SIMULAR", accentColor));
-        box.addView(top);
 
-        TextView p = title(price, 30);
-        p.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
-        box.addView(p);
-        box.addView(smallLine(detail));
-        return box;
+        TextView close = text("×", 34, UBER_BLACK, false);
+        close.setGravity(Gravity.CENTER);
+        close.setBackground(roundRect(Color.rgb(245, 245, 245), dp(12), Color.TRANSPARENT, 0));
+        close.setOnClickListener(v -> showHome());
+        top.addView(close, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        sheet.addView(top);
+
+        TextView priceView = text("R$ " + price, 43, UBER_BLACK, true);
+        priceView.setPadding(0, dp(8), 0, 0);
+        sheet.addView(priceView);
+
+        TextView rating = text("★ 4,85", 18, UBER_BLACK, false);
+        rating.setContentDescription("Avaliação do passageiro 4,85");
+        rating.setPadding(0, dp(8), 0, dp(14));
+        sheet.addView(rating);
+
+        sheet.addView(divider(Color.rgb(232, 232, 232)));
+
+        TextView pickup = text(
+                pickupKm + " km até o passageiro\nRua das Flores, 123 - Centro",
+                17,
+                UBER_BLACK,
+                false
+        );
+        pickup.setContentDescription("Distância até o passageiro: " + pickupKm + " quilômetros");
+        pickup.setLineSpacing(dp(4), 1f);
+        pickup.setPadding(0, dp(16), 0, dp(12));
+        sheet.addView(pickup);
+
+        TextView trip = text(
+                tripKm + " km • " + tripMin + " min de viagem\nDestino: Shopping Sul",
+                17,
+                UBER_BLACK,
+                false
+        );
+        trip.setContentDescription("Viagem: " + tripKm + " quilômetros e " + tripMin + " minutos");
+        trip.setLineSpacing(dp(4), 1f);
+        trip.setPadding(0, 0, 0, dp(18));
+        sheet.addView(trip);
+
+        Button accept = button("Aceitar", UBER_BLACK, UBER_WHITE, v -> { });
+        accept.setContentDescription("Botão simulado de aceitar corrida");
+        sheet.addView(accept);
+
+        sheet.addView(outlineButton("Editar cenário de teste", UBER_BLACK,
+                v -> showEditor(true, price, pickupKm, tripKm, tripMin)));
+
+        TextView lab = text("Simulação local • nenhuma corrida real será aceita", 12, UBER_MUTED, false);
+        lab.setGravity(Gravity.CENTER);
+        lab.setPadding(0, dp(12), 0, 0);
+        sheet.addView(lab);
+
+        screen.addView(sheet);
+        setContentView(wrap(screen, UBER_MAP));
     }
 
-    private TextView metricValue(String label, String value) {
-        TextView tv = new TextView(this);
-        tv.setText(label + "\n" + value);
-        tv.setTextColor(white);
-        tv.setTextSize(15);
-        tv.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        tv.setLineSpacing(dp(4), 1f);
-        tv.setPadding(dp(12), dp(10), dp(12), dp(10));
-        tv.setBackground(roundRect(metric, dp(13), border, dp(1)));
-        return tv;
+    private void show99Offer(String price, String pickupKm, String tripKm, String tripMin) {
+        getWindow().setStatusBarColor(NINE_YELLOW);
+        getWindow().setNavigationBarColor(NINE_BLACK);
+
+        LinearLayout screen = new LinearLayout(this);
+        screen.setOrientation(LinearLayout.VERTICAL);
+        screen.setBackgroundColor(NINE_BG);
+
+        FrameLayout map = new FrameLayout(this);
+        map.setBackgroundColor(Color.rgb(233, 233, 233));
+        map.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(225)));
+
+        TextView topBrand = text("99", 32, NINE_BLACK, true);
+        FrameLayout.LayoutParams brandLp = new FrameLayout.LayoutParams(-2, -2);
+        brandLp.leftMargin = dp(18);
+        brandLp.topMargin = dp(22);
+        map.addView(topBrand, brandLp);
+
+        TextView route = text("●  ━━━━━━━  ●", 24, NINE_ORANGE, true);
+        FrameLayout.LayoutParams routeLp = new FrameLayout.LayoutParams(-2, -2);
+        routeLp.gravity = Gravity.CENTER;
+        map.addView(route, routeLp);
+
+        TextView area = text("Centro • região da oferta", 14, NINE_MUTED, false);
+        FrameLayout.LayoutParams areaLp = new FrameLayout.LayoutParams(-2, -2);
+        areaLp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
+        areaLp.bottomMargin = dp(28);
+        map.addView(area, areaLp);
+
+        screen.addView(map);
+
+        LinearLayout sheet = new LinearLayout(this);
+        sheet.setOrientation(LinearLayout.VERTICAL);
+        sheet.setPadding(dp(20), dp(16), dp(20), dp(24));
+        sheet.setBackground(roundRect(NINE_WHITE, dp(22), Color.TRANSPARENT, 0));
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+
+        header.addView(text("99Pop", 23, NINE_BLACK, true));
+        header.addView(new Space(this), new LinearLayout.LayoutParams(0, dp(1), 1f));
+
+        TextView timer = text("15 s", 14, NINE_BLACK, true);
+        timer.setPadding(dp(12), dp(7), dp(12), dp(7));
+        timer.setBackground(roundRect(NINE_YELLOW, dp(999), Color.TRANSPARENT, 0));
+        header.addView(timer);
+        sheet.addView(header);
+
+        TextView priceView = text("R$ " + price, 40, NINE_BLACK, true);
+        priceView.setPadding(0, dp(10), 0, dp(2));
+        sheet.addView(priceView);
+
+        TextView earning = text("Valor estimado que você recebe", 13, NINE_MUTED, false);
+        earning.setPadding(0, 0, 0, dp(10));
+        sheet.addView(earning);
+
+        TextView rating = text("★ 4,78  •  890+ viagens", 16, NINE_BLACK, false);
+        rating.setContentDescription("Avaliação do passageiro 4,78");
+        rating.setPadding(0, 0, 0, dp(14));
+        sheet.addView(rating);
+
+        sheet.addView(divider(Color.rgb(235, 235, 235)));
+
+        TextView pickup = text(
+                pickupKm + " km até o passageiro\nAv. Brasil, 456 - Centro",
+                17,
+                NINE_BLACK,
+                false
+        );
+        pickup.setContentDescription("Distância até o passageiro: " + pickupKm + " quilômetros");
+        pickup.setLineSpacing(dp(4), 1f);
+        pickup.setPadding(0, dp(15), 0, dp(12));
+        sheet.addView(pickup);
+
+        TextView trip = text(
+                tripKm + " km • " + tripMin + " min de viagem\nDestino: Mercado Municipal",
+                17,
+                NINE_BLACK,
+                false
+        );
+        trip.setContentDescription("Viagem: " + tripKm + " quilômetros e " + tripMin + " minutos");
+        trip.setLineSpacing(dp(4), 1f);
+        trip.setPadding(0, 0, 0, dp(14));
+        sheet.addView(trip);
+
+        TextView protectedValue = text("✓ Valor da corrida visível antes do aceite", 13, NINE_GREEN, true);
+        protectedValue.setPadding(0, 0, 0, dp(14));
+        sheet.addView(protectedValue);
+
+        Button accept = button("Aceitar corrida", NINE_YELLOW, NINE_BLACK, v -> { });
+        accept.setContentDescription("Botão simulado de aceitar corrida");
+        sheet.addView(accept);
+
+        sheet.addView(outlineButton("Recusar", NINE_BLACK, v -> showHome()));
+        sheet.addView(outlineButton("Editar cenário de teste", NINE_ORANGE,
+                v -> showEditor(false, price, pickupKm, tripKm, tripMin)));
+
+        TextView lab = text("Simulação local • nenhuma corrida real será aceita", 12, NINE_MUTED, false);
+        lab.setGravity(Gravity.CENTER);
+        lab.setPadding(0, dp(12), 0, 0);
+        sheet.addView(lab);
+
+        screen.addView(sheet);
+        setContentView(wrap(screen, NINE_BG));
     }
 
-    private ScrollView wrap(LinearLayout root) {
-        ScrollView scroll = new ScrollView(this);
-        scroll.setBackgroundColor(navy);
-        scroll.setFillViewport(true);
-        scroll.addView(root);
-        return scroll;
-    }
+    private void showEditor(boolean uber, String price, String pickupKm, String tripKm, String tripMin) {
+        int bg = uber ? UBER_WHITE : NINE_BG;
+        int fg = uber ? UBER_BLACK : NINE_BLACK;
+        int accent = uber ? UBER_BLACK : NINE_YELLOW;
+        int accentText = uber ? UBER_WHITE : NINE_BLACK;
 
-    private LinearLayout baseLayout() {
+        getWindow().setStatusBarColor(uber ? UBER_BLACK : NINE_YELLOW);
+
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(20), dp(18), dp(20), dp(34));
-        root.setBackgroundColor(navy);
-        return root;
+        root.setPadding(dp(20), dp(24), dp(20), dp(32));
+        root.setBackgroundColor(bg);
+
+        root.addView(text(uber ? "Editar UberX" : "Editar 99Pop", 28, fg, true));
+        TextView helper = text("Altere os valores para gerar uma nova oferta e testar o parser/overlay.", 14, Color.rgb(105, 105, 105), false);
+        helper.setPadding(0, dp(6), 0, dp(14));
+        root.addView(helper);
+
+        EditText priceInput = input("Valor em R$", price, fg);
+        EditText pickupInput = input("Km até o passageiro", pickupKm, fg);
+        EditText tripInput = input("Km da viagem", tripKm, fg);
+        EditText minInput = input("Minutos da viagem", tripMin, fg);
+        root.addView(priceInput);
+        root.addView(pickupInput);
+        root.addView(tripInput);
+        root.addView(minInput);
+
+        root.addView(button("Atualizar oferta", accent, accentText, v -> {
+            String p = valueOr(priceInput, price);
+            String pk = valueOr(pickupInput, pickupKm);
+            String tk = valueOr(tripInput, tripKm);
+            String tm = valueOr(minInput, tripMin);
+            if (uber) showUberOffer(p, pk, tk, tm);
+            else show99Offer(p, pk, tk, tm);
+        }));
+
+        root.addView(outlineButton("Voltar sem alterar", fg, v -> {
+            if (uber) showUberOffer(price, pickupKm, tripKm, tripMin);
+            else show99Offer(price, pickupKm, tripKm, tripMin);
+        }));
+
+        setContentView(wrap(root, bg));
     }
 
-    private LinearLayout cardLayout() {
-        LinearLayout box = new LinearLayout(this);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(dp(18), dp(16), dp(18), dp(18));
-        box.setBackground(roundRect(card, dp(20), border, dp(1)));
-        box.setElevation(dp(3));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.setMargins(0, dp(14), 0, dp(8));
-        box.setLayoutParams(lp);
-        return box;
-    }
-
-    private TextView title(String value, int size) {
-        TextView tv = new TextView(this);
-        tv.setText(value);
-        tv.setTextColor(white);
-        tv.setTextSize(size);
-        tv.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
-        tv.setPadding(0, dp(5), 0, dp(3));
-        tv.setIncludeFontPadding(false);
-        return tv;
-    }
-
-    private TextView sectionLabel(String value) {
-        TextView tv = new TextView(this);
-        tv.setText(value);
-        tv.setTextColor(cyan);
-        tv.setTextSize(11);
-        tv.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        tv.setLetterSpacing(0.10f);
-        tv.setPadding(0, dp(20), 0, dp(3));
-        return tv;
-    }
-
-    private TextView subtitle(String value) {
-        TextView tv = new TextView(this);
-        tv.setText(value);
-        tv.setTextColor(muted);
-        tv.setTextSize(14);
-        tv.setLineSpacing(dp(2), 1f);
-        tv.setPadding(0, dp(3), 0, dp(8));
-        return tv;
-    }
-
-    private TextView line(String value) {
-        TextView tv = new TextView(this);
-        tv.setText(value);
-        tv.setTextColor(white);
-        tv.setTextSize(17);
-        tv.setPadding(0, dp(9), 0, dp(2));
-        return tv;
-    }
-
-    private TextView smallLine(String value) {
-        TextView tv = new TextView(this);
-        tv.setText(value);
-        tv.setTextColor(muted);
-        tv.setTextSize(13);
-        tv.setPadding(0, dp(2), 0, dp(7));
-        return tv;
-    }
-
-    private TextView chip(String value, int accentColor) {
-        TextView tv = new TextView(this);
-        tv.setText(value);
-        tv.setTextColor(accentColor);
-        tv.setTextSize(10);
-        tv.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        tv.setGravity(Gravity.CENTER);
-        tv.setPadding(dp(10), dp(6), dp(10), dp(6));
-        tv.setBackground(roundRect(metric, dp(999), accentColor, dp(1)));
-        return tv;
-    }
-
-    private Button primaryButton(String label, View.OnClickListener listener) {
-        Button button = new Button(this);
-        button.setText(label);
-        button.setTextColor(navyDeep);
-        button.setTextSize(15);
-        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        button.setAllCaps(false);
-        button.setStateListAnimator(null);
-        button.setBackground(roundRect(cyan, dp(14), Color.TRANSPARENT, 0));
-        button.setOnClickListener(listener);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(52));
+    private Button homeButton(String label, int bg, int fg, View.OnClickListener listener) {
+        Button button = button(label, bg, fg, listener);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(64));
         lp.setMargins(0, dp(12), 0, 0);
         button.setLayoutParams(lp);
         return button;
     }
 
-    private Button secondaryButton(String label, View.OnClickListener listener) {
+    private Button button(String label, int bg, int fg, View.OnClickListener listener) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextColor(white);
-        button.setTextSize(14);
+        button.setTextColor(fg);
+        button.setTextSize(16);
         button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         button.setAllCaps(false);
         button.setStateListAnimator(null);
-        button.setBackground(roundRect(card, dp(14), border, dp(1)));
+        button.setBackground(roundRect(bg, dp(12), Color.TRANSPARENT, 0));
         button.setOnClickListener(listener);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(48));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(54));
         lp.setMargins(0, dp(8), 0, 0);
         button.setLayoutParams(lp);
         return button;
     }
 
-    private TextView inputLabel(String label) {
-        TextView tv = new TextView(this);
-        tv.setText(label);
-        tv.setTextColor(mutedDark);
-        tv.setTextSize(10);
-        tv.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        tv.setLetterSpacing(0.08f);
-        tv.setPadding(0, dp(10), 0, dp(4));
-        return tv;
+    private Button outlineButton(String label, int fg, View.OnClickListener listener) {
+        Button button = new Button(this);
+        button.setText(label);
+        button.setTextColor(fg);
+        button.setTextSize(14);
+        button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        button.setAllCaps(false);
+        button.setStateListAnimator(null);
+        button.setBackground(roundRect(Color.TRANSPARENT, dp(12), Color.rgb(210, 210, 210), dp(1)));
+        button.setOnClickListener(listener);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(50));
+        lp.setMargins(0, dp(8), 0, 0);
+        button.setLayoutParams(lp);
+        return button;
     }
 
-    private EditText numberInput(String hint, String value) {
+    private EditText input(String hint, String value, int fg) {
         EditText input = new EditText(this);
         input.setHint(hint);
-        input.setHintTextColor(mutedDark);
         input.setText(value);
-        input.setTextColor(white);
-        input.setTextSize(16);
+        input.setTextColor(fg);
+        input.setHintTextColor(Color.rgb(135, 135, 135));
+        input.setTextSize(17);
         input.setSingleLine(true);
         input.setPadding(dp(14), 0, dp(14), 0);
         input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        input.setContentDescription(hint);
-        input.setBackground(roundRect(metric, dp(13), border, dp(1)));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(50));
+        input.setBackground(roundRect(Color.rgb(245, 245, 245), dp(10), Color.rgb(220, 220, 220), dp(1)));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(54));
+        lp.setMargins(0, dp(10), 0, 0);
         input.setLayoutParams(lp);
         return input;
     }
 
-    private void addAccentDivider(LinearLayout parent) {
-        LinearLayout line = new LinearLayout(this);
-        line.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(3));
-        lp.setMargins(0, dp(14), 0, dp(12));
-        parent.addView(line, lp);
-
-        View c = new View(this);
-        c.setBackgroundColor(cyan);
-        line.addView(c, new LinearLayout.LayoutParams(0, dp(3), 3f));
-
-        View o = new View(this);
-        o.setBackgroundColor(orange);
-        line.addView(o, new LinearLayout.LayoutParams(0, dp(3), 1f));
+    private TextView text(String value, int size, int color, boolean bold) {
+        TextView tv = new TextView(this);
+        tv.setText(value);
+        tv.setTextColor(color);
+        tv.setTextSize(size);
+        if (bold) tv.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        tv.setIncludeFontPadding(false);
+        return tv;
     }
 
-    private GradientDrawable roundRect(int fill, int radiusPx, int stroke, int strokePx) {
-        GradientDrawable d = new GradientDrawable();
-        d.setColor(fill);
-        d.setCornerRadius(radiusPx);
-        if (strokePx > 0) d.setStroke(strokePx, stroke);
-        return d;
+    private View divider(int color) {
+        View view = new View(this);
+        view.setBackgroundColor(color);
+        view.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(1)));
+        return view;
+    }
+
+    private ScrollView wrap(View root, int bg) {
+        ScrollView scroll = new ScrollView(this);
+        scroll.setBackgroundColor(bg);
+        scroll.setFillViewport(true);
+        scroll.addView(root);
+        return scroll;
+    }
+
+    private GradientDrawable roundRect(int fill, float radius, int stroke, int strokeWidth) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(fill);
+        drawable.setCornerRadius(radius);
+        if (strokeWidth > 0) drawable.setStroke(strokeWidth, stroke);
+        return drawable;
     }
 
     private String valueOr(EditText input, String fallback) {
         String s = input.getText().toString().trim();
         return s.isEmpty() ? fallback : s;
-    }
-
-    private double parseNumber(String value) {
-        try {
-            return Double.parseDouble(value.replace(',', '.'));
-        } catch (Exception ignored) {
-            return 0.0;
-        }
     }
 
     private int dp(int value) {

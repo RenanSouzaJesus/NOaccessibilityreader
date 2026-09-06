@@ -1,9 +1,15 @@
 package com.noapp.ridesimulator;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
@@ -32,9 +38,13 @@ public class RideSimulatorActivity extends Activity {
     private static final int NINE_MUTED = Color.rgb(101, 101, 101);
     private static final int NINE_GREEN = Color.rgb(24, 151, 101);
 
+    private static final String PUSH_CHANNEL = "ride_simulator_push";
+    private static final int REQUEST_PUSH = 77;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ensurePushChannel();
         showHome();
     }
 
@@ -64,6 +74,24 @@ public class RideSimulatorActivity extends Activity {
         root.addView(homeButton("99 • 99Pop", NINE_YELLOW, NINE_BLACK,
                 v -> show99Offer("31,20", "2,4", "7,0", "16")));
 
+        TextView pushTitle = text("Teste de notificações", 17, Color.WHITE, true);
+        pushTitle.setPadding(0, dp(24), 0, dp(4));
+        root.addView(pushTitle);
+
+        TextView pushInfo = text(
+                "Use estes botões para simular o aviso que chega antes da tela da oportunidade. Depois abra a oferta acima para o NÓ capturar os dados completos.",
+                13,
+                Color.rgb(165, 165, 165),
+                false
+        );
+        pushInfo.setPadding(0, 0, 0, dp(4));
+        root.addView(pushInfo);
+
+        root.addView(outlineButton("Simular push da Uber", Color.WHITE,
+                v -> postMockNotification(true)));
+        root.addView(outlineButton("Simular push da 99", NINE_YELLOW,
+                v -> postMockNotification(false)));
+
         TextView info = text(
                 "Mantenha a acessibilidade do NÓ ativa. Ao abrir uma oferta, o HUD do NÓ deve aparecer por cima e permanecer até você tocar em OK.",
                 14,
@@ -74,6 +102,48 @@ public class RideSimulatorActivity extends Activity {
         root.addView(info);
 
         setContentView(wrap(root, Color.rgb(15, 15, 15)));
+    }
+
+    private void postMockNotification(boolean uber) {
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_PUSH);
+            return;
+        }
+
+        ensurePushChannel();
+        NotificationManager manager =
+                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (manager == null) return;
+
+        String title = uber ? "Uber Driver" : "99 Motorista";
+        String body = uber
+                ? "Nova corrida disponível! Toque para ver os detalhes."
+                : "Nova corrida disponível! Toque para ver os detalhes.";
+
+        Notification notification = new Notification.Builder(this, PUSH_CHANNEL)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setAutoCancel(true)
+                .build();
+
+        manager.notify(uber ? 1101 : 1102, notification);
+    }
+
+    private void ensurePushChannel() {
+        NotificationManager manager =
+                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (manager == null) return;
+
+        NotificationChannel channel = new NotificationChannel(
+                PUSH_CHANNEL,
+                "Simulação de oportunidades",
+                NotificationManager.IMPORTANCE_HIGH
+        );
+        channel.setDescription("Notificações fictícias da Uber e 99 para testes do NÓ.");
+        manager.createNotificationChannel(channel);
     }
 
     private void showUberOffer(String price, String pickupKm, String tripKm, String tripMin) {

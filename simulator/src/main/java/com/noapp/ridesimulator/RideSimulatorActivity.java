@@ -38,6 +38,10 @@ public class RideSimulatorActivity extends Activity {
     private static final int NINE_MUTED = Color.rgb(101, 101, 101);
     private static final int NINE_GREEN = Color.rgb(24, 151, 101);
 
+    private static final int IFOOD_RED = Color.rgb(234, 29, 44);
+    private static final int ML_YELLOW = Color.rgb(255, 220, 0);
+    private static final int SHOPEE_ORANGE = Color.rgb(238, 77, 45);
+
     private static final String PUSH_CHANNEL = "ride_simulator_push";
     private static final int REQUEST_PUSH = 77;
 
@@ -49,23 +53,24 @@ public class RideSimulatorActivity extends Activity {
     }
 
     private void showHome() {
-        getWindow().setStatusBarColor(Color.rgb(15, 15, 15));
-        getWindow().setNavigationBarColor(Color.rgb(15, 15, 15));
+        int dark = Color.rgb(15, 15, 15);
+        getWindow().setStatusBarColor(dark);
+        getWindow().setNavigationBarColor(dark);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(20), dp(24), dp(20), dp(32));
-        root.setBackgroundColor(Color.rgb(15, 15, 15));
+        root.setBackgroundColor(dark);
 
-        root.addView(text("Simulador de Corridas", 30, Color.WHITE, true));
+        root.addView(text("Simulador de Oportunidades", 30, Color.WHITE, true));
 
         TextView subtitle = text(
-                "Escolha uma plataforma. A tela da Uber imita a Uber; a tela da 99 imita a 99. O overlay continua com a identidade visual do NÓ.",
+                "Telas locais para testar como o NÓ reúne corridas, entregas e rotas sem depender dos aplicativos reais.",
                 15,
                 Color.rgb(185, 185, 185),
                 false
         );
-        subtitle.setPadding(0, dp(8), 0, dp(16));
+        subtitle.setPadding(0, dp(8), 0, dp(14));
         root.addView(subtitle);
 
         root.addView(homeButton("Uber • UberX", UBER_WHITE, UBER_BLACK,
@@ -74,12 +79,21 @@ public class RideSimulatorActivity extends Activity {
         root.addView(homeButton("99 • 99Pop", NINE_YELLOW, NINE_BLACK,
                 v -> show99Offer("31,20", "2,4", "7,0", "16")));
 
+        root.addView(homeButton("iFood • Pedido", IFOOD_RED, Color.WHITE,
+                v -> showIfoodOffer()));
+
+        root.addView(homeButton("Mercado Livre • Rota", ML_YELLOW, Color.rgb(35, 35, 35),
+                v -> showMercadoLivreRoute()));
+
+        root.addView(homeButton("Shopee • Pacote", SHOPEE_ORANGE, Color.WHITE,
+                v -> showShopeeOffer()));
+
         TextView pushTitle = text("Teste de notificações", 17, Color.WHITE, true);
         pushTitle.setPadding(0, dp(24), 0, dp(4));
         root.addView(pushTitle);
 
         TextView pushInfo = text(
-                "Use estes botões para simular o aviso que chega antes da tela da oportunidade. Depois abra a oferta acima para o NÓ capturar os dados completos.",
+                "Primeiro simule um push. Depois abra a tela correspondente acima. Assim você testa alerta + leitura completa + central do NÓ.",
                 13,
                 Color.rgb(165, 165, 165),
                 false
@@ -87,24 +101,25 @@ public class RideSimulatorActivity extends Activity {
         pushInfo.setPadding(0, 0, 0, dp(4));
         root.addView(pushInfo);
 
-        root.addView(outlineButton("Simular push da Uber", Color.WHITE,
-                v -> postMockNotification(true)));
-        root.addView(outlineButton("Simular push da 99", NINE_YELLOW,
-                v -> postMockNotification(false)));
+        root.addView(outlineButton("Push Uber", Color.WHITE, v -> postMockNotification("Uber")));
+        root.addView(outlineButton("Push 99", NINE_YELLOW, v -> postMockNotification("99")));
+        root.addView(outlineButton("Push iFood", IFOOD_RED, v -> postMockNotification("iFood")));
+        root.addView(outlineButton("Push Mercado Livre", ML_YELLOW, v -> postMockNotification("Mercado Livre")));
+        root.addView(outlineButton("Push Shopee", SHOPEE_ORANGE, v -> postMockNotification("Shopee")));
 
         TextView info = text(
-                "Mantenha a acessibilidade do NÓ ativa. Ao abrir uma oferta, o HUD do NÓ deve aparecer por cima e permanecer até você tocar em OK.",
+                "Mantenha a acessibilidade do NÓ ativa. O HUD deve permanecer até você tocar em OK. As oportunidades ficam salvas por alguns minutos na Central.",
                 14,
                 Color.rgb(165, 165, 165),
                 false
         );
-        info.setPadding(0, dp(24), 0, 0);
+        info.setPadding(0, dp(22), 0, 0);
         root.addView(info);
 
-        setContentView(wrap(root, Color.rgb(15, 15, 15)));
+        setContentView(wrap(root, dark));
     }
 
-    private void postMockNotification(boolean uber) {
+    private void postMockNotification(String platform) {
         if (Build.VERSION.SDK_INT >= 33
                 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -117,10 +132,37 @@ public class RideSimulatorActivity extends Activity {
                 (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (manager == null) return;
 
-        String title = uber ? "Uber Driver" : "99 Motorista";
-        String body = uber
-                ? "Nova corrida disponível! Toque para ver os detalhes."
-                : "Nova corrida disponível! Toque para ver os detalhes.";
+        String title;
+        String body;
+        int id;
+
+        switch (platform) {
+            case "Uber":
+                title = "Uber Driver";
+                body = "Nova corrida disponível! Toque para ver os detalhes.";
+                id = 1101;
+                break;
+            case "99":
+                title = "99 Motorista";
+                body = "Nova corrida disponível! Toque para ver os detalhes.";
+                id = 1102;
+                break;
+            case "iFood":
+                title = "iFood Entregador";
+                body = "Novo pedido disponível! Toque para ver os detalhes.";
+                id = 1103;
+                break;
+            case "Mercado Livre":
+                title = "Mercado Livre";
+                body = "Nova rota disponível! Toque para ver os detalhes.";
+                id = 1104;
+                break;
+            default:
+                title = "Shopee Entregas";
+                body = "Novo pacote disponível! Toque para ver os detalhes.";
+                id = 1105;
+                break;
+        }
 
         Notification notification = new Notification.Builder(this, PUSH_CHANNEL)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -129,7 +171,7 @@ public class RideSimulatorActivity extends Activity {
                 .setAutoCancel(true)
                 .build();
 
-        manager.notify(uber ? 1101 : 1102, notification);
+        manager.notify(id, notification);
     }
 
     private void ensurePushChannel() {
@@ -142,7 +184,7 @@ public class RideSimulatorActivity extends Activity {
                 "Simulação de oportunidades",
                 NotificationManager.IMPORTANCE_HIGH
         );
-        channel.setDescription("Notificações fictícias da Uber e 99 para testes do NÓ.");
+        channel.setDescription("Notificações fictícias para testes do NÓ.");
         manager.createNotificationChannel(channel);
     }
 
@@ -154,42 +196,7 @@ public class RideSimulatorActivity extends Activity {
         screen.setOrientation(LinearLayout.VERTICAL);
         screen.setBackgroundColor(UBER_MAP);
 
-        FrameLayout map = new FrameLayout(this);
-        map.setBackgroundColor(UBER_MAP);
-        map.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(250)));
-
-        TextView mapTitle = text("Centro", 20, Color.rgb(90, 100, 108), true);
-        FrameLayout.LayoutParams mt = new FrameLayout.LayoutParams(-2, -2);
-        mt.leftMargin = dp(22);
-        mt.topMargin = dp(44);
-        map.addView(mapTitle, mt);
-
-        TextView street1 = text("Av. Brasil", 13, Color.rgb(128, 136, 142), false);
-        FrameLayout.LayoutParams s1 = new FrameLayout.LayoutParams(-2, -2);
-        s1.leftMargin = dp(40);
-        s1.topMargin = dp(112);
-        map.addView(street1, s1);
-
-        TextView street2 = text("Rua das Flores", 13, Color.rgb(128, 136, 142), false);
-        FrameLayout.LayoutParams s2 = new FrameLayout.LayoutParams(-2, -2);
-        s2.rightMargin = dp(34);
-        s2.topMargin = dp(170);
-        s2.gravity = Gravity.END;
-        map.addView(street2, s2);
-
-        TextView driverDot = text("●", 26, UBER_BLUE, true);
-        FrameLayout.LayoutParams d = new FrameLayout.LayoutParams(-2, -2);
-        d.leftMargin = dp(155);
-        d.topMargin = dp(105);
-        map.addView(driverDot, d);
-
-        TextView pickupDot = text("●", 20, UBER_BLACK, true);
-        FrameLayout.LayoutParams p = new FrameLayout.LayoutParams(-2, -2);
-        p.rightMargin = dp(72);
-        p.bottomMargin = dp(34);
-        p.gravity = Gravity.END | Gravity.BOTTOM;
-        map.addView(pickupDot, p);
-
+        FrameLayout map = fakeMap("Centro", UBER_BLUE, UBER_MAP);
         screen.addView(map);
 
         LinearLayout sheet = new LinearLayout(this);
@@ -222,7 +229,6 @@ public class RideSimulatorActivity extends Activity {
         rating.setContentDescription("Avaliação do passageiro 4,85");
         rating.setPadding(0, dp(8), 0, dp(14));
         sheet.addView(rating);
-
         sheet.addView(divider(Color.rgb(232, 232, 232)));
 
         TextView pickup = text(
@@ -250,14 +256,9 @@ public class RideSimulatorActivity extends Activity {
         Button accept = button("Aceitar", UBER_BLACK, UBER_WHITE, v -> { });
         accept.setContentDescription("Botão simulado de aceitar corrida");
         sheet.addView(accept);
-
         sheet.addView(outlineButton("Editar cenário de teste", UBER_BLACK,
                 v -> showEditor(true, price, pickupKm, tripKm, tripMin)));
-
-        TextView lab = text("Simulação local • nenhuma corrida real será aceita", 12, UBER_MUTED, false);
-        lab.setGravity(Gravity.CENTER);
-        lab.setPadding(0, dp(12), 0, 0);
-        sheet.addView(lab);
+        sheet.addView(backToHomeText(UBER_MUTED));
 
         screen.addView(sheet);
         setContentView(wrap(screen, UBER_MAP));
@@ -270,29 +271,7 @@ public class RideSimulatorActivity extends Activity {
         LinearLayout screen = new LinearLayout(this);
         screen.setOrientation(LinearLayout.VERTICAL);
         screen.setBackgroundColor(NINE_BG);
-
-        FrameLayout map = new FrameLayout(this);
-        map.setBackgroundColor(Color.rgb(233, 233, 233));
-        map.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(225)));
-
-        TextView topBrand = text("99", 32, NINE_BLACK, true);
-        FrameLayout.LayoutParams brandLp = new FrameLayout.LayoutParams(-2, -2);
-        brandLp.leftMargin = dp(18);
-        brandLp.topMargin = dp(22);
-        map.addView(topBrand, brandLp);
-
-        TextView route = text("●  ━━━━━━━  ●", 24, NINE_ORANGE, true);
-        FrameLayout.LayoutParams routeLp = new FrameLayout.LayoutParams(-2, -2);
-        routeLp.gravity = Gravity.CENTER;
-        map.addView(route, routeLp);
-
-        TextView area = text("Centro • região da oferta", 14, NINE_MUTED, false);
-        FrameLayout.LayoutParams areaLp = new FrameLayout.LayoutParams(-2, -2);
-        areaLp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
-        areaLp.bottomMargin = dp(28);
-        map.addView(area, areaLp);
-
-        screen.addView(map);
+        screen.addView(fakeMap("99 • Centro", NINE_ORANGE, Color.rgb(233, 233, 233)));
 
         LinearLayout sheet = new LinearLayout(this);
         sheet.setOrientation(LinearLayout.VERTICAL);
@@ -302,7 +281,6 @@ public class RideSimulatorActivity extends Activity {
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-
         header.addView(text("99Pop", 23, NINE_BLACK, true));
         header.addView(new Space(this), new LinearLayout.LayoutParams(0, dp(1), 1f));
 
@@ -324,7 +302,6 @@ public class RideSimulatorActivity extends Activity {
         rating.setContentDescription("Avaliação do passageiro 4,78");
         rating.setPadding(0, 0, 0, dp(14));
         sheet.addView(rating);
-
         sheet.addView(divider(Color.rgb(235, 235, 235)));
 
         TextView pickup = text(
@@ -353,21 +330,158 @@ public class RideSimulatorActivity extends Activity {
         protectedValue.setPadding(0, 0, 0, dp(14));
         sheet.addView(protectedValue);
 
-        Button accept = button("Aceitar corrida", NINE_YELLOW, NINE_BLACK, v -> { });
-        accept.setContentDescription("Botão simulado de aceitar corrida");
-        sheet.addView(accept);
-
+        sheet.addView(button("Aceitar corrida", NINE_YELLOW, NINE_BLACK, v -> { }));
         sheet.addView(outlineButton("Recusar", NINE_BLACK, v -> showHome()));
         sheet.addView(outlineButton("Editar cenário de teste", NINE_ORANGE,
                 v -> showEditor(false, price, pickupKm, tripKm, tripMin)));
-
-        TextView lab = text("Simulação local • nenhuma corrida real será aceita", 12, NINE_MUTED, false);
-        lab.setGravity(Gravity.CENTER);
-        lab.setPadding(0, dp(12), 0, 0);
-        sheet.addView(lab);
+        sheet.addView(backToHomeText(NINE_MUTED));
 
         screen.addView(sheet);
         setContentView(wrap(screen, NINE_BG));
+    }
+
+    private void showIfoodOffer() {
+        getWindow().setStatusBarColor(IFOOD_RED);
+        getWindow().setNavigationBarColor(Color.rgb(30, 30, 30));
+
+        LinearLayout root = brandedOpportunityRoot(Color.rgb(248, 248, 248));
+        root.addView(brandedHeader("iFood Entregador", IFOOD_RED, Color.WHITE));
+        root.addView(fakeMap("Retirada → Entrega", IFOOD_RED, Color.rgb(235, 235, 235)));
+
+        LinearLayout card = whiteCard();
+        card.addView(text("Novo pedido", 18, IFOOD_RED, true));
+        card.addView(bigPrice("R$ 12,90", Color.rgb(30, 30, 30)));
+        card.addView(infoLine("1,4 km até a retirada"));
+        card.addView(infoLine("McDonald's • Av. Rebouças, 3970"));
+        card.addView(infoLine("3,2 km até a entrega"));
+        card.addView(infoLine("Cliente • Rua Cardoso de Almeida, 840"));
+        card.addView(button("Aceitar pedido", IFOOD_RED, Color.WHITE, v -> { }));
+        card.addView(outlineButton("Voltar", Color.rgb(45, 45, 45), v -> showHome()));
+        root.addView(card);
+
+        setContentView(wrap(root, Color.rgb(248, 248, 248)));
+    }
+
+    private void showMercadoLivreRoute() {
+        getWindow().setStatusBarColor(ML_YELLOW);
+        getWindow().setNavigationBarColor(Color.rgb(35, 35, 35));
+
+        LinearLayout root = brandedOpportunityRoot(Color.rgb(247, 247, 247));
+        root.addView(brandedHeader("Mercado Livre", ML_YELLOW, Color.rgb(35, 35, 35)));
+
+        LinearLayout card = whiteCard();
+        card.addView(text("Nova rota de entregas", 18, Color.rgb(50, 50, 50), true));
+        card.addView(bigPrice("R$ 285,00", Color.rgb(25, 25, 25)));
+        card.addView(infoLine("82 entregas"));
+        card.addView(infoLine("Coleta: Barueri - SP"));
+        card.addView(infoLine("Entrega: Cotia e região - SP"));
+        card.addView(infoLine("Estimativa: 6h"));
+        card.addView(infoLine("Distância total: 98 km"));
+        card.addView(infoLine("Tipo: Pacotes e envelopes"));
+        card.addView(button("Aceitar rota", Color.rgb(35, 35, 35), Color.WHITE, v -> { }));
+        card.addView(outlineButton("Voltar", Color.rgb(45, 45, 45), v -> showHome()));
+        root.addView(card);
+
+        setContentView(wrap(root, Color.rgb(247, 247, 247)));
+    }
+
+    private void showShopeeOffer() {
+        getWindow().setStatusBarColor(SHOPEE_ORANGE);
+        getWindow().setNavigationBarColor(Color.rgb(35, 35, 35));
+
+        LinearLayout root = brandedOpportunityRoot(Color.rgb(248, 248, 248));
+        root.addView(brandedHeader("Shopee Entregas", SHOPEE_ORANGE, Color.WHITE));
+        root.addView(fakeMap("Coleta → Cliente", SHOPEE_ORANGE, Color.rgb(237, 237, 237)));
+
+        LinearLayout card = whiteCard();
+        card.addView(text("Novo pacote", 18, SHOPEE_ORANGE, true));
+        card.addView(bigPrice("R$ 9,50", Color.rgb(30, 30, 30)));
+        card.addView(infoLine("1,1 km até a coleta"));
+        card.addView(infoLine("Centro de Distribuição Shopee • Osasco - SP"));
+        card.addView(infoLine("4,8 km até a entrega"));
+        card.addView(infoLine("Cliente • Rua das Palmeiras, 320"));
+        card.addView(button("Aceitar pacote", SHOPEE_ORANGE, Color.WHITE, v -> { }));
+        card.addView(outlineButton("Voltar", Color.rgb(45, 45, 45), v -> showHome()));
+        root.addView(card);
+
+        setContentView(wrap(root, Color.rgb(248, 248, 248)));
+    }
+
+    private FrameLayout fakeMap(String label, int accent, int bg) {
+        FrameLayout map = new FrameLayout(this);
+        map.setBackgroundColor(bg);
+        map.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(215)));
+
+        TextView title = text(label, 19, Color.rgb(80, 88, 95), true);
+        FrameLayout.LayoutParams titleLp = new FrameLayout.LayoutParams(-2, -2);
+        titleLp.leftMargin = dp(22);
+        titleLp.topMargin = dp(34);
+        map.addView(title, titleLp);
+
+        TextView street1 = text("Av. Brasil", 13, Color.rgb(128, 136, 142), false);
+        FrameLayout.LayoutParams s1 = new FrameLayout.LayoutParams(-2, -2);
+        s1.leftMargin = dp(42);
+        s1.topMargin = dp(105);
+        map.addView(street1, s1);
+
+        TextView route = text("●  ━━━━━━━  ●", 24, accent, true);
+        FrameLayout.LayoutParams routeLp = new FrameLayout.LayoutParams(-2, -2);
+        routeLp.gravity = Gravity.CENTER;
+        map.addView(route, routeLp);
+
+        return map;
+    }
+
+    private LinearLayout brandedOpportunityRoot(int background) {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(background);
+        return root;
+    }
+
+    private View brandedHeader(String title, int bg, int fg) {
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(dp(18), dp(16), dp(18), dp(16));
+        header.setBackgroundColor(bg);
+
+        header.addView(text(title, 22, fg, true));
+        header.addView(new Space(this), new LinearLayout.LayoutParams(0, dp(1), 1f));
+        TextView close = text("×", 30, fg, false);
+        close.setOnClickListener(v -> showHome());
+        header.addView(close);
+        return header;
+    }
+
+    private LinearLayout whiteCard() {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(20), dp(18), dp(20), dp(24));
+        card.setBackground(roundRect(Color.WHITE, dp(20), Color.TRANSPARENT, 0));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.setMargins(dp(12), dp(12), dp(12), dp(20));
+        card.setLayoutParams(lp);
+        return card;
+    }
+
+    private TextView bigPrice(String value, int color) {
+        TextView price = text(value, 38, color, true);
+        price.setPadding(0, dp(8), 0, dp(10));
+        return price;
+    }
+
+    private TextView infoLine(String value) {
+        TextView line = text(value, 16, Color.rgb(45, 45, 45), false);
+        line.setPadding(0, dp(6), 0, dp(6));
+        return line;
+    }
+
+    private TextView backToHomeText(int color) {
+        TextView lab = text("Simulação local • nenhuma oportunidade real será aceita", 12, color, false);
+        lab.setGravity(Gravity.CENTER);
+        lab.setPadding(0, dp(12), 0, 0);
+        return lab;
     }
 
     private void showEditor(boolean uber, String price, String pickupKm, String tripKm, String tripMin) {
@@ -416,8 +530,8 @@ public class RideSimulatorActivity extends Activity {
 
     private Button homeButton(String label, int bg, int fg, View.OnClickListener listener) {
         Button button = button(label, bg, fg, listener);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(64));
-        lp.setMargins(0, dp(12), 0, 0);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(60));
+        lp.setMargins(0, dp(10), 0, 0);
         button.setLayoutParams(lp);
         return button;
     }
@@ -446,7 +560,7 @@ public class RideSimulatorActivity extends Activity {
         button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         button.setAllCaps(false);
         button.setStateListAnimator(null);
-        button.setBackground(roundRect(Color.TRANSPARENT, dp(12), Color.rgb(210, 210, 210), dp(1)));
+        button.setBackground(roundRect(Color.TRANSPARENT, dp(12), Color.rgb(120, 120, 120), dp(1)));
         button.setOnClickListener(listener);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, dp(50));
         lp.setMargins(0, dp(8), 0, 0);

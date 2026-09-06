@@ -1,17 +1,35 @@
 package com.noapp.accessreader;
 
 import android.accessibilityservice.AccessibilityService;
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.PixelFormat;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.os.SystemClock;
+import android.view.Gravity;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.TextView;
 
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Set;
 
 public class ScreenAccessibilityService extends AccessibilityService {
 
     private long lastRead = 0L;
+    private WindowManager windowManager;
+    private TextView overlayView;
+    private boolean overlayAttached;
+
+    @Override
+    protected void onServiceConnected() {
+        super.onServiceConnected();
+        windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+    }
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
@@ -20,15 +38,21 @@ public class ScreenAccessibilityService extends AccessibilityService {
         CharSequence packageName = event.getPackageName();
         String currentPackage = packageName == null ? "" : packageName.toString();
 
-        // Não sobrescreve a última captura quando o usuário volta ao próprio app NO.
-        if (getPackageName().equals(currentPackage)) return;
+        // Nunca deixa a tela do próprio NO substituir a última corrida analisada.
+        if (getPackageName().equals(currentPackage)) {
+            hideOverlay();
+            return;
+        }
 
         long now = SystemClock.elapsedRealtime();
-        if (now - lastRead < 500) return;
+        if (now - lastRead < 300) return;
         lastRead = now;
 
         AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root == null) return;
+        if (root == null) {
+            hideOverlay();
+            return;
+        }
 
         Set<String> lines = new LinkedHashSet<>();
         collectNodeData(root, lines);
@@ -39,39 +63,124 @@ public class ScreenAccessibilityService extends AccessibilityService {
             out.append(line);
         }
 
-        SharedPreferences prefs =
-                getSharedPreferences("no_accessibility", MODE_PRIVATE);
-
-        prefs.edit()
-                .putString("package", currentPackage)
-                .putString("content", out.toString())
-                .putLong("time", System.currentTimeMillis())
-                .apply();
-
         root.recycle();
+
+        String content = out.toString();
+        RideOfferParser.RideOffer offer = RideOfferParser.parse(content);
+
+        // Só salva como corrida quando o parser encontra os campos mínimos.
+        // Isso impede launcher, tela de recentes e menus do sistema de apagar a última oferta válida.
+        if (offer == null) {
+            hideOverlay();
+            saveDebugCapture(currentPackage, content);
+            return;
+        }
+
+        saveOffer(currentPackage, content, offer);
+        showOverlay(offer);
     }
 
-    private void collectNodeData(
-            AccessibilityNodeInfo node,
-            Set<String> lines
-    ) {
+    private void saveOffer(String pkg, String content, RideOfferParser.RideOffer offer) {
+        SharedPreferences prefs = getSharedPreferences("no_accessibility", MODE_PRIVATE);
+        prefs.edit()
+                .putString("package", pkg)
+                .putString("content", content)
+                .putLong("time", System.currentTimeMillis())
+                .putBoolean("has_offer", true)
+                .putString("platform", offer.platform)
+                .putString("category", offer.category)
+                .putFloat("price", (float) offer.price)
+                .putFloat("pickup_km", (float) offer.pickupKm)
+                .putFloat("trip_km", (float) offer.tripKm)
+                .putInt("trip_minutes", offer.tripMinutes)
+                .putFloat("total_km", (float) offer.totalKm)
+                .putFloat("gross_per_km", (float) offer.grossPerKm)
+                .putFloat("gross_per_hour", (float) offer.grossPerHour)
+                .putString("rating", offer.rating)
+                .apply();
+    }
+
+    private void saveDebugCapture(String pkg, String content) {
+        getSharedPreferences("no_accessibility", MODE_PRIVATE)
+                .edit()
+                .putString("debug_package", pkg)
+                .putString("debug_content", content)
+                .putLong("debug_time", System.currentTimeMillis())
+                .apply();
+    }
+
+    private void showOverlay(RideOfferParser.RideOffer offer) {
+        if (windowManager == null) return;
+
+        String hud = String.format(Locale.getDefault(),
+                "NO • %s %s\nR$ %.2f\n%.1f km total • %d min\nR$ %.2f/km • R$ %.2f/h\n%s",
+                offer.platform,
+                offer.category,
+                offer.price,
+                offer.totalKm,
+                offer.tripMinutes,
+                offer.grossPerKm,
+                offer.grossPerHour,
+                offer.rating);
+
+        if (overlayView == null) {
+            overlayView = new TextView(this);
+            overlayView.setTextColor(Color.WHITE);
+            overlayView.setTextSize(15);
+            overlayView.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+            overlayView.setPadding(dp(14), dp(10), dp(14), dp(10));
+
+            GradientDrawable bg = new GradientDrawable();
+            bg.setColor(Color.argb(225, 18, 23, 29));
+            bg.setCornerRadius(dp(14));
+            bg.setStroke(dp(1), Color.argb(180, 70, 180, 110));
+            overlayView.setBackground(bg);
+        }
+
+        overlayView.setText(hud);
+
+        if (!overlayAttached) {
+            WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                            | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                            | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    PixelFormat.TRANSLUCENT
+            );
+            params.gravity = Gravity.TOP | Gravity.END;
+            params.x = dp(12);
+            params.y = dp(72);
+
+            try {
+                windowManager.addView(overlayView, params);
+                overlayAttached = true;
+            } catch (Exception ignored) {
+                overlayAttached = false;
+            }
+        }
+    }
+
+    private void hideOverlay() {
+        if (!overlayAttached || windowManager == null || overlayView == null) return;
+        try {
+            windowManager.removeView(overlayView);
+        } catch (Exception ignored) {
+        }
+        overlayAttached = false;
+    }
+
+    private void collectNodeData(AccessibilityNodeInfo node, Set<String> lines) {
         if (node == null) return;
 
         CharSequence text = node.getText();
         CharSequence desc = node.getContentDescription();
         String viewId = node.getViewIdResourceName();
 
-        if (text != null && text.length() > 0) {
-            lines.add("TEXT: " + text);
-        }
-
-        if (desc != null && desc.length() > 0) {
-            lines.add("DESC: " + desc);
-        }
-
-        if (viewId != null && !viewId.isEmpty()) {
-            lines.add("VIEW_ID: " + viewId);
-        }
+        if (text != null && text.length() > 0) lines.add("TEXT: " + text);
+        if (desc != null && desc.length() > 0) lines.add("DESC: " + desc);
+        if (viewId != null && !viewId.isEmpty()) lines.add("VIEW_ID: " + viewId);
 
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
@@ -82,7 +191,18 @@ public class ScreenAccessibilityService extends AccessibilityService {
         }
     }
 
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
     @Override
     public void onInterrupt() {
+        hideOverlay();
+    }
+
+    @Override
+    public void onDestroy() {
+        hideOverlay();
+        super.onDestroy();
     }
 }

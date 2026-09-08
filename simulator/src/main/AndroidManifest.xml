@@ -6,8 +6,11 @@
         android:allowBackup="true"
         android:label="Simulador de Corridas"
         android:theme="@android:style/Theme.Material.NoActionBar">
+
+        <activity android:name=".RideSimulatorActivity" android:exported="false" />
+
         <activity
-            android:name=".RideSimulatorActivity"
+            android:name=".RideSimulatorActivityV2"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

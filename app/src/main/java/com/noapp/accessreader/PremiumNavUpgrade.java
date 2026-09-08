@@ -22,17 +22,15 @@ final class PremiumNavUpgrade {
         View root = activity.findViewById(android.R.id.content);
         if (!(root instanceof ViewGroup)) return;
 
-        TextView opportunities = findText((ViewGroup) root, "Oportunidades");
-        TextView campaigns = findText((ViewGroup) root, "Campanhas");
+        // "Ajustes" existe apenas na barra inferior; por isso ele é nossa âncora segura.
         TextView settings = findText((ViewGroup) root, "Ajustes");
-        TextView trips = findText((ViewGroup) root, "Viagens");
+        ViewGroup nav = settings != null && settings.getParent() instanceof ViewGroup
+                ? (ViewGroup) settings.getParent()
+                : null;
 
-        ViewGroup nav = null;
-        if (opportunities != null && opportunities.getParent() instanceof ViewGroup) {
-            nav = (ViewGroup) opportunities.getParent();
-        } else if (campaigns != null && campaigns.getParent() instanceof ViewGroup) {
-            nav = (ViewGroup) campaigns.getParent();
-        }
+        TextView opportunities = nav == null ? null : findText(nav, "Oportunidades");
+        TextView campaigns = nav == null ? null : findText(nav, "Campanhas");
+        TextView trips = nav == null ? null : findText(nav, "Viagens");
 
         if (nav != null && trips == null) {
             TextView item = PremiumUi.text(activity, "Viagens", 10,

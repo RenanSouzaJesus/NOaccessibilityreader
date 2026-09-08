@@ -11,6 +11,10 @@
         android:theme="@style/Theme.NO">
 
         <activity
+            android:name=".CampaignAnalysisActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".AdvertiserActivity"
             android:exported="false" />
 

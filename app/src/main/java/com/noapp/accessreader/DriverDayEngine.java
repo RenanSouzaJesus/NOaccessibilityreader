@@ -30,12 +30,19 @@ public final class DriverDayEngine {
         double goal = Math.max(0, dailyGoal);
         double hoursLimit = Math.max(0, maxHours);
 
-        double progressPct = goal > 0 ? clamp((safeProfit / goal) * 100.0, 0, 100) : 0;
-        double remaining = goal > 0 ? Math.max(0, goal - safeProfit) : 0;
-        boolean goalReached = goal > 0 && safeProfit >= goal;
+        // Com faturamento positivo e custo zero, ainda não temos base suficiente
+        // para afirmar que o faturamento é lucro. Nesse caso a meta líquida não avança.
+        boolean hasNetBasis = safeRevenue == 0 || safeCost > 0;
+        double progressPct = goal > 0 && hasNetBasis
+                ? clamp((safeProfit / goal) * 100.0, 0, 100)
+                : 0;
+        double remaining = goal > 0
+                ? (hasNetBasis ? Math.max(0, goal - safeProfit) : goal)
+                : 0;
+        boolean goalReached = goal > 0 && hasNetBasis && safeProfit >= goal;
         double costPer100 = safeRevenue > 0 ? (safeCost / safeRevenue) * 100.0 : 0;
-        double profitPerKm = safeKm > 0 ? safeProfit / safeKm : 0;
-        double profitPerHour = safeMinutes > 0 ? safeProfit / (safeMinutes / 60.0) : 0;
+        double profitPerKm = safeKm > 0 && hasNetBasis ? safeProfit / safeKm : 0;
+        double profitPerHour = safeMinutes > 0 && hasNetBasis ? safeProfit / (safeMinutes / 60.0) : 0;
         double emptyKmPct = safeKm > 0 ? (safePickup / safeKm) * 100.0 : 0;
         double tripHours = safeMinutes / 60.0;
         double hourProgressPct = hoursLimit > 0 ? clamp((tripHours / hoursLimit) * 100.0, 0, 100) : 0;
@@ -61,17 +68,18 @@ public final class DriverDayEngine {
                 emptyKmPct,
                 tripHours,
                 hourProgressPct,
-                hourLimitReached
+                hourLimitReached,
+                hasNetBasis
         );
     }
 
     public static String insight(DaySummary s, boolean vehicleConfigured) {
         if (s == null) return "O NÓ precisa de mais dados para formar sua leitura do dia.";
-        if (!vehicleConfigured) {
-            return "Cadastre seu veículo para transformar faturamento em lucro estimado e enxergar quanto realmente sobra.";
-        }
         if (s.completedTrips == 0) {
             return "Quando você concluir viagens, o NÓ vai separar faturamento, custo do carro e lucro estimado.";
+        }
+        if (!vehicleConfigured || !s.hasNetBasis) {
+            return "Cadastre seu veículo para transformar faturamento em lucro estimado e enxergar quanto realmente sobra.";
         }
         if (s.goalReached) {
             return "Meta líquida atingida. Agora você decide se vale continuar rodando ou preservar seu tempo e o veículo.";
@@ -119,6 +127,7 @@ public final class DriverDayEngine {
         public final double tripHours;
         public final double hourProgressPct;
         public final boolean hourLimitReached;
+        public final boolean hasNetBasis;
 
         DaySummary(
                 double revenue,
@@ -140,7 +149,8 @@ public final class DriverDayEngine {
                 double emptyKmPct,
                 double tripHours,
                 double hourProgressPct,
-                boolean hourLimitReached
+                boolean hourLimitReached,
+                boolean hasNetBasis
         ) {
             this.revenue = revenue;
             this.cost = cost;
@@ -162,6 +172,7 @@ public final class DriverDayEngine {
             this.tripHours = tripHours;
             this.hourProgressPct = hourProgressPct;
             this.hourLimitReached = hourLimitReached;
+            this.hasNetBasis = hasNetBasis;
         }
     }
 }

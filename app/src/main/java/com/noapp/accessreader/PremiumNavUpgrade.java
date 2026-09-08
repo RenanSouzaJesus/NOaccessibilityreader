@@ -22,7 +22,6 @@ final class PremiumNavUpgrade {
         View root = activity.findViewById(android.R.id.content);
         if (!(root instanceof ViewGroup)) return;
 
-        // "Ajustes" existe apenas na barra inferior; por isso ele é nossa âncora segura.
         TextView settings = findText((ViewGroup) root, "Ajustes");
         ViewGroup nav = settings != null && settings.getParent() instanceof ViewGroup
                 ? (ViewGroup) settings.getParent()
@@ -101,15 +100,26 @@ final class PremiumNavUpgrade {
     }
 
     private static void showSettings(Activity activity) {
+        VehicleProfile vehicle = VehicleProfileStore.load(activity);
+        String vehicleStatus = vehicle.isConfigured()
+                ? vehicle.displayName() + " • configurado"
+                : "Não configurado";
+
         String[] options = {
+                "Meu veículo — " + vehicleStatus,
                 "Acessibilidade — " + (isTripAccessibilityEnabled(activity) ? "Ativa" : "Desativada"),
                 "Alertas dos aplicativos — " + (isNotificationListenerEnabled(activity) ? "Ativos" : "Desativados")
         };
         new AlertDialog.Builder(activity)
-                .setTitle("Conexões do NÓ")
+                .setTitle("Ajustes do NÓ")
                 .setItems(options, (dialog, which) -> {
-                    if (which == 0) activity.startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
-                    else activity.startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+                    if (which == 0) {
+                        activity.startActivity(new Intent(activity, VehicleSettingsActivity.class));
+                    } else if (which == 1) {
+                        activity.startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                    } else {
+                        activity.startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+                    }
                 })
                 .setNegativeButton("Fechar", null)
                 .show();

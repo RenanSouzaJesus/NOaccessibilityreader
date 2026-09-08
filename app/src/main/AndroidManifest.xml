@@ -10,40 +10,20 @@
         android:label="NÓ"
         android:theme="@style/Theme.NO">
 
-        <activity
-            android:name=".CampaignAnalysisPremiumActivity"
-            android:exported="false" />
+        <activity android:name=".CampaignAnalysisPremiumActivity" android:exported="false" />
+        <activity android:name=".AdvertiserActivityPremium" android:exported="false" />
+        <activity android:name=".CampaignsActivityPremium" android:exported="false" />
+        <activity android:name=".CampaignsTripsActivity" android:exported="false" />
+        <activity android:name=".TripsActivityPremium" android:exported="false" />
+        <activity android:name=".TripsActivityV2" android:exported="false" />
+        <activity android:name=".CampaignAnalysisActivity" android:exported="false" />
+        <activity android:name=".AdvertiserActivity" android:exported="false" />
+        <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".MainActivityV2" android:exported="false" />
+        <activity android:name=".MainActivityPremium" android:exported="false" />
 
         <activity
-            android:name=".AdvertiserActivityPremium"
-            android:exported="false" />
-
-        <activity
-            android:name=".CampaignsActivityPremium"
-            android:exported="false" />
-
-        <activity
-            android:name=".TripsActivityPremium"
-            android:exported="false" />
-
-        <activity
-            android:name=".CampaignAnalysisActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".AdvertiserActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".MainActivityV2"
-            android:exported="false" />
-
-        <activity
-            android:name=".MainActivityPremium"
+            android:name=".OpportunitiesTripsActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -59,7 +39,6 @@
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
             </intent-filter>
-
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />

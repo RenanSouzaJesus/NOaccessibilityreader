@@ -188,7 +188,7 @@ public class MainActivity extends Activity {
 
         Button cta = new Button(this);
         cta.setText("Criar campanha");
-        cta.setTextAllCaps(false);
+        cta.setAllCaps(false);
         cta.setTextSize(13);
         cta.setTextColor(getColor(R.color.no_navy_deep));
         cta.setTypeface(Typeface.DEFAULT, Typeface.BOLD);

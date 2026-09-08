@@ -466,7 +466,7 @@ public class AdvertiserActivity extends Activity {
     private Button primaryButton(String label) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextAllCaps(false);
+        button.setAllCaps(false);
         button.setTextSize(13);
         button.setTextColor(getColor(R.color.no_navy_deep));
         button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
@@ -478,7 +478,7 @@ public class AdvertiserActivity extends Activity {
     private Button secondaryButton(String label) {
         Button button = new Button(this);
         button.setText(label);
-        button.setTextAllCaps(false);
+        button.setAllCaps(false);
         button.setTextSize(13);
         button.setTextColor(getColor(R.color.no_white));
         button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);

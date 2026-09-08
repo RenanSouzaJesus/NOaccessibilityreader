@@ -39,6 +39,7 @@ public final class DriverDayEngine {
         double emptyKmPct = safeKm > 0 ? (safePickup / safeKm) * 100.0 : 0;
         double tripHours = safeMinutes / 60.0;
         double hourProgressPct = hoursLimit > 0 ? clamp((tripHours / hoursLimit) * 100.0, 0, 100) : 0;
+        boolean hourLimitReached = hoursLimit > 0 && tripHours >= hoursLimit;
 
         return new DaySummary(
                 safeRevenue,
@@ -59,7 +60,8 @@ public final class DriverDayEngine {
                 profitPerHour,
                 emptyKmPct,
                 tripHours,
-                hourProgressPct
+                hourProgressPct,
+                hourLimitReached
         );
     }
 
@@ -73,6 +75,9 @@ public final class DriverDayEngine {
         }
         if (s.goalReached) {
             return "Meta líquida atingida. Agora você decide se vale continuar rodando ou preservar seu tempo e o veículo.";
+        }
+        if (s.hourLimitReached) {
+            return "Seu limite pessoal de horas em viagens foi atingido. O NÓ destaca isso para você decidir sem olhar apenas para o faturamento.";
         }
         if (s.emptyKmPct >= 25.0) {
             return String.format(java.util.Locale.ROOT,
@@ -113,6 +118,7 @@ public final class DriverDayEngine {
         public final double emptyKmPct;
         public final double tripHours;
         public final double hourProgressPct;
+        public final boolean hourLimitReached;
 
         DaySummary(
                 double revenue,
@@ -133,7 +139,8 @@ public final class DriverDayEngine {
                 double profitPerHour,
                 double emptyKmPct,
                 double tripHours,
-                double hourProgressPct
+                double hourProgressPct,
+                boolean hourLimitReached
         ) {
             this.revenue = revenue;
             this.cost = cost;
@@ -154,6 +161,7 @@ public final class DriverDayEngine {
             this.emptyKmPct = emptyKmPct;
             this.tripHours = tripHours;
             this.hourProgressPct = hourProgressPct;
+            this.hourLimitReached = hourLimitReached;
         }
     }
 }

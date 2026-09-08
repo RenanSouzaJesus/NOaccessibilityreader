@@ -297,7 +297,10 @@ public class VehicleSettingsActivity extends Activity {
 
     private double number(EditText input) {
         try {
-            String raw = value(input).replace(".", "").replace(',', '.');
+            String raw = value(input).replace(" ", "");
+            if (raw.contains(",")) {
+                raw = raw.replace(".", "").replace(',', '.');
+            }
             return raw.isEmpty() ? 0 : Double.parseDouble(raw);
         } catch (Exception ignored) {
             return 0;

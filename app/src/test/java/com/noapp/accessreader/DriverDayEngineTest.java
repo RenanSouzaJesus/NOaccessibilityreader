@@ -31,6 +31,7 @@ public class DriverDayEngineTest {
         assertEquals(43.33, s.profitPerHour, 0.01);
         assertEquals(20.0, s.emptyKmPct, 0.01);
         assertFalse(s.hourLimitReached);
+        assertTrue(s.hasNetBasis);
     }
 
     @Test
@@ -90,5 +91,27 @@ public class DriverDayEngineTest {
 
         assertEquals(30.0, s.emptyKmPct, 0.01);
         assertTrue(DriverDayEngine.insight(s, true).contains("deslocamento vazio"));
+    }
+
+    @Test
+    public void doesNotTreatGrossRevenueAsNetGoalWithoutCostBasis() {
+        DriverDayEngine.DaySummary s = DriverDayEngine.summarize(
+                320.0,
+                0.0,
+                320.0,
+                100.0,
+                20.0,
+                300,
+                8,
+                0.0,
+                300.0,
+                9.0
+        );
+
+        assertFalse(s.hasNetBasis);
+        assertEquals(0.0, s.goalProgressPct, 0.01);
+        assertEquals(300.0, s.remainingToGoal, 0.01);
+        assertFalse(s.goalReached);
+        assertTrue(DriverDayEngine.insight(s, false).contains("Cadastre seu veículo"));
     }
 }

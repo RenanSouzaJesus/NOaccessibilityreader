@@ -16,6 +16,7 @@
         <activity android:name=".CampaignsTripsActivity" android:exported="false" />
         <activity android:name=".TripsActivityPremium" android:exported="false" />
         <activity android:name=".TripsActivityV2" android:exported="false" />
+        <activity android:name=".VehicleSettingsActivity" android:exported="false" />
         <activity android:name=".CampaignAnalysisActivity" android:exported="false" />
         <activity android:name=".AdvertiserActivity" android:exported="false" />
         <activity android:name=".MainActivity" android:exported="false" />

@@ -1,7 +1,6 @@
 package com.noapp.accessreader;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Color;
@@ -13,7 +12,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** Mantém as áreas Oportunidades, Viagens, Campanhas e Ajustes sempre separadas. */
+/** Mantém Oportunidades, Viagens, Campanhas e Ajustes separados e previsíveis. */
 final class PremiumNavUpgrade {
 
     private PremiumNavUpgrade() {}
@@ -45,9 +44,9 @@ final class PremiumNavUpgrade {
         }
 
         if (opportunities != null) opportunities.setOnClickListener(v -> open(activity, OpportunitiesTripsActivity.class));
-        if (trips != null) trips.setOnClickListener(v -> open(activity, TripsActivityV2.class));
+        if (trips != null) trips.setOnClickListener(v -> open(activity, TripsOverviewActivity.class));
         if (campaigns != null) campaigns.setOnClickListener(v -> open(activity, CampaignsTripsActivity.class));
-        if (settings != null) settings.setOnClickListener(v -> showSettings(activity));
+        if (settings != null) settings.setOnClickListener(v -> open(activity, DriverSettingsActivity.class));
 
         fixCaptureStatus(activity, (ViewGroup) root);
     }
@@ -97,32 +96,6 @@ final class PremiumNavUpgrade {
         Intent intent = new Intent(activity, target);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         activity.startActivity(intent);
-    }
-
-    private static void showSettings(Activity activity) {
-        VehicleProfile vehicle = VehicleProfileStore.load(activity);
-        String vehicleStatus = vehicle.isConfigured()
-                ? vehicle.displayName() + " • configurado"
-                : "Não configurado";
-
-        String[] options = {
-                "Meu veículo — " + vehicleStatus,
-                "Acessibilidade — " + (isTripAccessibilityEnabled(activity) ? "Ativa" : "Desativada"),
-                "Alertas dos aplicativos — " + (isNotificationListenerEnabled(activity) ? "Ativos" : "Desativados")
-        };
-        new AlertDialog.Builder(activity)
-                .setTitle("Ajustes do NÓ")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        activity.startActivity(new Intent(activity, VehicleSettingsActivity.class));
-                    } else if (which == 1) {
-                        activity.startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
-                    } else {
-                        activity.startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
-                    }
-                })
-                .setNegativeButton("Fechar", null)
-                .show();
     }
 
     private static boolean isTripAccessibilityEnabled(Activity activity) {

@@ -15,8 +15,10 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.Space;
 import android.widget.TextView;
 
@@ -47,6 +49,7 @@ public class MainActivity extends Activity {
     private TextView sourceNotificationText;
     private LinearLayout debugPanel;
     private TextView resultText;
+    private TextView mediaLastStatusText;
     private Button tabAll;
     private Button tabRides;
     private Button tabDeliveries;
@@ -86,6 +89,8 @@ public class MainActivity extends Activity {
         Button notificationButton = findViewById(R.id.notificationButton);
         Button refreshButton = findViewById(R.id.refreshButton);
 
+        installMediaEntryCard();
+
         accessibilityButton.setOnClickListener(v ->
                 startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         );
@@ -123,6 +128,81 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void installMediaEntryCard() {
+        ViewGroup content = findViewById(android.R.id.content);
+        if (content == null || content.getChildCount() == 0) return;
+
+        View first = content.getChildAt(0);
+        if (!(first instanceof ScrollView)) return;
+        ScrollView scroll = (ScrollView) first;
+        if (scroll.getChildCount() == 0 || !(scroll.getChildAt(0) instanceof LinearLayout)) return;
+        LinearLayout root = (LinearLayout) scroll.getChildAt(0);
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(14), dp(14), dp(14), dp(14));
+        card.setBackground(roundRect(
+                getColor(R.color.no_card_soft),
+                dp(18),
+                getColor(R.color.no_border),
+                dp(1)
+        ));
+
+        LinearLayout.LayoutParams cardLp = new LinearLayout.LayoutParams(-1, -2);
+        cardLp.setMargins(0, dp(14), 0, 0);
+        card.setLayoutParams(cardLp);
+
+        LinearLayout top = new LinearLayout(this);
+        top.setOrientation(LinearLayout.HORIZONTAL);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(top);
+
+        TextView mediaLabel = text("NÓ MÍDIA", 10, getColor(R.color.no_orange), true);
+        mediaLabel.setLetterSpacing(0.09f);
+        top.addView(mediaLabel);
+        top.addView(new Space(this), new LinearLayout.LayoutParams(0, 1, 1f));
+
+        TextView audience = text("ANUNCIANTE", 9, getColor(R.color.no_cyan_soft), true);
+        audience.setLetterSpacing(0.06f);
+        audience.setPadding(dp(8), dp(4), dp(8), dp(4));
+        audience.setBackgroundResource(R.drawable.bg_no_chip);
+        top.addView(audience);
+
+        TextView title = text("Quer anunciar nas ruas?", 19, getColor(R.color.no_white), true);
+        title.setPadding(0, dp(8), 0, 0);
+        card.addView(title);
+
+        TextView subtitle = text(
+                "Solicite veículos por cidade, raio, quantidade, ano e formato de publicidade.",
+                12,
+                getColor(R.color.no_text_secondary),
+                false
+        );
+        subtitle.setPadding(0, dp(4), 0, 0);
+        card.addView(subtitle);
+
+        mediaLastStatusText = text("", 11, getColor(R.color.no_cyan_soft), true);
+        mediaLastStatusText.setPadding(0, dp(8), 0, 0);
+        mediaLastStatusText.setVisibility(View.GONE);
+        card.addView(mediaLastStatusText);
+
+        Button cta = new Button(this);
+        cta.setText("Criar campanha");
+        cta.setTextAllCaps(false);
+        cta.setTextSize(13);
+        cta.setTextColor(getColor(R.color.no_navy_deep));
+        cta.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        cta.setBackgroundResource(R.drawable.bg_no_button_primary);
+        cta.setStateListAnimator(null);
+        cta.setOnClickListener(v -> startActivity(new Intent(this, AdvertiserActivity.class)));
+        LinearLayout.LayoutParams ctaLp = new LinearLayout.LayoutParams(-1, dp(44));
+        ctaLp.setMargins(0, dp(12), 0, 0);
+        card.addView(cta, ctaLp);
+
+        int insertAt = Math.min(4, root.getChildCount());
+        root.addView(card, insertAt);
+    }
+
     private void configureNotifications() {
         if (Build.VERSION.SDK_INT >= 33
                 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -148,6 +228,7 @@ public class MainActivity extends Activity {
 
     private void refreshData() {
         updateCaptureStatus();
+        updateMediaRequestStatus();
         updateSourceNotification();
         currentItems = OpportunityStore.listFresh(this, INBOX_MAX_AGE_MS);
         updateTabLabels();
@@ -155,6 +236,20 @@ public class MainActivity extends Activity {
         renderBestOpportunity();
         renderInbox();
         updateDebugPanel();
+    }
+
+    private void updateMediaRequestStatus() {
+        if (mediaLastStatusText == null) return;
+        SharedPreferences prefs = getSharedPreferences("no_media", MODE_PRIVATE);
+        String id = prefs.getString("last_request_id", "");
+        String campaign = prefs.getString("last_request_campaign", "");
+        String status = prefs.getString("last_request_status", "");
+        if (TextUtils.isEmpty(id)) {
+            mediaLastStatusText.setVisibility(View.GONE);
+            return;
+        }
+        mediaLastStatusText.setText(status + " • " + campaign + " • " + id);
+        mediaLastStatusText.setVisibility(View.VISIBLE);
     }
 
     private void updateCaptureStatus() {

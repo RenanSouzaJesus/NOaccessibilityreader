@@ -23,6 +23,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".TripsActivityPremium"
+            android:exported="false" />
+
+        <activity
             android:name=".CampaignAnalysisActivity"
             android:exported="false" />
 
@@ -48,7 +52,7 @@
         </activity>
 
         <service
-            android:name=".ScreenAccessibilityService"
+            android:name=".TripAwareAccessibilityService"
             android:label="NÓ • Leitura autorizada"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="true">

@@ -11,6 +11,14 @@
         android:theme="@style/Theme.NO">
 
         <activity
+            android:name=".CampaignAnalysisPremiumActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".AdvertiserActivityPremium"
+            android:exported="false" />
+
+        <activity
             android:name=".CampaignAnalysisActivity"
             android:exported="false" />
 
@@ -24,6 +32,10 @@
 
         <activity
             android:name=".MainActivityV2"
+            android:exported="false" />
+
+        <activity
+            android:name=".MainActivityPremium"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -33,7 +33,9 @@ public final class TripStore {
             }
         }
 
-        TripRecord record = TripRecord.fromOpportunity(opportunity, acceptedAt);
+        // Congela o custo vigente do veículo nesta viagem. Mudanças futuras no
+        // perfil não alteram o histórico financeiro já registrado.
+        TripRecord record = TripRecord.fromOpportunity(context, opportunity, acceptedAt);
         if (record == null) return false;
         items.add(record);
         trimAndWrite(context, items);
@@ -126,7 +128,16 @@ public final class TripStore {
                         obj.optDouble("grossPerHour", 0),
                         obj.optLong("acceptedAt", 0),
                         obj.optLong("completedAt", 0),
-                        obj.optString("status", TripRecord.STATUS_ACCEPTED)
+                        obj.optString("status", TripRecord.STATUS_ACCEPTED),
+                        obj.optString("vehicleName", ""),
+                        obj.optDouble("fuelCostPerKm", 0),
+                        obj.optDouble("maintenanceCostPerKm", 0),
+                        obj.optDouble("depreciationCostPerKm", 0),
+                        obj.optDouble("fixedCostPerKm", 0),
+                        obj.optDouble("totalCostPerKm", 0),
+                        obj.optDouble("estimatedCost", 0),
+                        obj.has("estimatedProfit") ? obj.optDouble("estimatedProfit", 0) : obj.optDouble("price", 0),
+                        obj.optDouble("estimatedMarginPct", 0)
                 ));
             }
         } catch (Exception ignored) {
@@ -152,6 +163,15 @@ public final class TripStore {
                 obj.put("acceptedAt", item.acceptedAt);
                 obj.put("completedAt", item.completedAt);
                 obj.put("status", item.status);
+                obj.put("vehicleName", item.vehicleName);
+                obj.put("fuelCostPerKm", item.fuelCostPerKm);
+                obj.put("maintenanceCostPerKm", item.maintenanceCostPerKm);
+                obj.put("depreciationCostPerKm", item.depreciationCostPerKm);
+                obj.put("fixedCostPerKm", item.fixedCostPerKm);
+                obj.put("totalCostPerKm", item.totalCostPerKm);
+                obj.put("estimatedCost", item.estimatedCost);
+                obj.put("estimatedProfit", item.estimatedProfit);
+                obj.put("estimatedMarginPct", item.estimatedMarginPct);
                 array.put(obj);
             } catch (Exception ignored) {
             }
